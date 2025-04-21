@@ -5,5 +5,5 @@ import androidx.compose.runtime.Composable
 
 @Composable
 fun MotorsScreen() {
-    Text(text = "Fridge")
+    Text(text = "Motors")
 }
