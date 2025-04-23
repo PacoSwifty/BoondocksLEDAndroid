@@ -4,10 +4,11 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -37,16 +38,20 @@ fun BoondocksApp() {
         val currentScreen = tabRowScreens.find { it.route == currentDestination?.route } ?: Lights
         Scaffold(
             topBar = {
-                TabRow(
-                    allScreens = tabRowScreens,
-                    onTabSelected = { newScreen ->
-                        navController.navigateSingleTopTo(newScreen.route)
-                    },
-                    currentScreen = currentScreen
-                )
+                Column() {
+                    Box(modifier = Modifier.statusBarsPadding())
+                    TabRow(
+                        allScreens = tabRowScreens,
+                        onTabSelected = { newScreen ->
+                            navController.navigateSingleTopTo(newScreen.route)
+                        },
+                        currentScreen = currentScreen,
+                    )
+                }
+
             }
-        ) {
-            innerPadding ->
+
+        ) { innerPadding ->
             BoondocksNavHost(
                 navController = navController,
                 modifier = Modifier.padding(innerPadding)
@@ -56,3 +61,10 @@ fun BoondocksApp() {
 
     }
 }
+
+@Preview
+@Composable
+fun BoondocksAppPreview() {
+    BoondocksApp()
+}
+
