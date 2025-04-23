@@ -1,3 +1,8 @@
 <resources>
     <string name="app_name">Boondocks</string>
+
+    <string name="scene1">Scene I</string>
+    <string name="scene2">Scene II</string>
+    <string name="scene3">Scene III</string>
+
 </resources>
