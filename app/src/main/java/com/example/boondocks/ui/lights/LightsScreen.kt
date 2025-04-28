@@ -12,20 +12,20 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.boondocks.R
 
 @Composable
-fun LightsScreen(lightsViewModel: LightsViewModel = viewModel()) {
+fun LightsScreen(lightsViewModel: LightsViewModel = hiltViewModel()) {
     val mediumPadding = dimensionResource(R.dimen.padding_medium)
-    val lightsUiState by lightsViewModel.uiState.collectAsState()
+    val lightsUiState by lightsViewModel.uiState.collectAsStateWithLifecycle()
 
     Column(
         modifier = Modifier
