@@ -16,21 +16,20 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.boondocks.data.Constants.ANTARCTICA
 import com.example.boondocks.ui.components.TabRow
-import com.example.boondocks.ui.lights.LightsViewModel
 import com.example.boondocks.ui.theme.BoondocksTheme
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
-    //this will be mainactivity view model
-    private val lightsViewModel: LightsViewModel by viewModels()
+    private val mainActivityViewModel: MainActivityViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -42,12 +41,11 @@ class MainActivity : ComponentActivity() {
         collectLightsMessage()
     }
 
-    //put this in viewmodel and scope it to that (or maybe not, just observe in viewmodel and take action here)
     private fun collectLightsMessage() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                lightsViewModel.lightsMessageFlow.collect { message ->
-                    Log.i(ANTARCTICA, "In the activity, received this:   $message")
+                mainActivityViewModel.lightsMessageFlow.collect {
+                    Log.i(ANTARCTICA, "received message $it")
                 }
             }
         }
@@ -74,7 +72,6 @@ class MainActivity : ComponentActivity() {
                             currentScreen = currentScreen,
                         )
                     }
-
                 }
 
             ) { innerPadding ->
@@ -82,9 +79,7 @@ class MainActivity : ComponentActivity() {
                     navController = navController,
                     modifier = Modifier.padding(innerPadding)
                 )
-
             }
-
         }
     }
 
@@ -95,22 +90,3 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-//repository with the flow, then an activity viewmodels coped to the activity, then inject same repository into both viewmodels
-// mainactivity AndroidViewModel AND screen viewmodel need to inject the repository and do emission from there.
-//need to set up hilt DI for this
-// screen viewmodel tells repository what message to emit
-//in repository addMessage(message)
-
-/*
-interface LightRepository {
-val messageFlow: SharedFlow<String>
-
-}
-fun lightAdded(message: String)
-
-in mainactivity lightsrepository.messageflow.collect
-
-
-read about bridge pattern interface
-read about hilt setup DI
- */
