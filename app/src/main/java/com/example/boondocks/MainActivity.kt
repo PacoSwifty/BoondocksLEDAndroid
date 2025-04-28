@@ -1,7 +1,23 @@
 package com.example.boondocks
 
+import android.Manifest
+import android.annotation.SuppressLint
+import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothDevice
+import android.bluetooth.BluetoothGatt
+import android.bluetooth.BluetoothGattCallback
+import android.bluetooth.BluetoothGattCharacteristic
+import android.bluetooth.BluetoothGattDescriptor
+import android.bluetooth.BluetoothManager
+import android.bluetooth.BluetoothProfile
+import android.bluetooth.le.BluetoothLeScanner
+import android.bluetooth.le.ScanCallback
+import android.bluetooth.le.ScanResult
+import android.content.Context
+import android.content.pm.PackageManager
 import android.os.Bundle
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -15,6 +31,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.core.app.ActivityCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -25,9 +42,43 @@ import com.example.boondocks.ui.components.TabRow
 import com.example.boondocks.ui.theme.BoondocksTheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
+import java.util.UUID
+
+const val MICROPY_UUID = "6E400001-B5A3-F393-E0A9-E50E24DCCA9E"
+const val MICROPY_RX_UUID = "6e400002-b5a3-f393-e0a9-e50e24dcca9e" // Write to this UUID
+const val MICROPY_TX_UUID = "6e400003-b5a3-f393-e0a9-e50e24dcca9e" // Read from this UUID
+const val BT_TAG = "Bluetooth"
+
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    //region bluetooth variables
+
+    private val bluetoothPermissions = arrayOf(
+        Manifest.permission.BLUETOOTH_SCAN,
+        Manifest.permission.BLUETOOTH_CONNECT,
+        Manifest.permission.ACCESS_FINE_LOCATION,
+        Manifest.permission.ACCESS_COARSE_LOCATION
+    )
+    private val bluetoothAdapter: BluetoothAdapter? by lazy {
+        val bluetoothManager = getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
+        bluetoothManager.adapter
+    }
+
+    private val bluetoothLeScanner: BluetoothLeScanner? by lazy {
+        bluetoothAdapter?.bluetoothLeScanner
+    }
+
+    private var bluetoothGatt: BluetoothGatt? = null
+    private var targetDevice: BluetoothDevice? = null
+    private var targetWriteCharacteristic: BluetoothGattCharacteristic? = null
+    private var targetReadCharacteristic: BluetoothGattCharacteristic? = null
+
+    private val bluetoothRequestCode = 1001
+
+    //endregion
+
 
     private val mainActivityViewModel: MainActivityViewModel by viewModels()
 
@@ -38,14 +89,17 @@ class MainActivity : ComponentActivity() {
             BoondocksApp()
         }
 
+        requestBluetoothPermissions()
         collectLightsMessage()
+
     }
 
     private fun collectLightsMessage() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 mainActivityViewModel.lightsMessageFlow.collect {
-                    Log.i(ANTARCTICA, "received message $it")
+                    Log.i(ANTARCTICA, "received message from Lights Flow: $it")
+                    sendMessage(it)
                 }
             }
         }
@@ -88,5 +142,231 @@ class MainActivity : ComponentActivity() {
     fun BoondocksAppPreview() {
         BoondocksApp()
     }
-}
 
+
+    /** ---------- Below this Point is all the Bluetooth Code ---------- **/
+
+    private val scanCallback = object : ScanCallback() {
+        @SuppressLint("MissingPermission")
+        override fun onScanResult(callbackType: Int, result: ScanResult?) {
+            super.onScanResult(callbackType, result)
+
+            Log.i(BT_TAG, "SINGLE SCAN RESULT HIT")
+            val device: BluetoothDevice? = result?.device
+            val deviceName = device?.name ?: "Unknown Device"
+            val deviceAddress = device?.address
+            Log.d(BT_TAG, "Found device: $deviceName, Address: $deviceAddress")
+            //todo: display list of devices and let user pick one, or decide if we can hardcode it?
+
+            //todo remove hardcode device selection
+            if (deviceName == "mpy-uart") {
+                targetDevice = device
+                stopBluetoothScan()
+                connectToDevice(device)
+            }
+        }
+
+        override fun onScanFailed(errorCode: Int) {
+            super.onScanFailed(errorCode)
+            Log.e(BT_TAG, "Scan failed with error code: $errorCode")
+        }
+    }
+
+    private val gattCallback = object : BluetoothGattCallback() {
+        @SuppressLint("MissingPermission")
+        override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
+            super.onConnectionStateChange(gatt, status, newState)
+            if (newState == BluetoothProfile.STATE_CONNECTED) {
+                Log.i(BT_TAG, "Connected to GATT server.")
+                // Attempts to discover services after successful connection.
+                Log.i(
+                    BT_TAG,
+                    "Attempting to start service discovery: ${bluetoothGatt?.discoverServices()}"
+                )
+                Log.i(BT_TAG, "Requesting MTU: 512")
+                bluetoothGatt?.requestMtu(512)
+            } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
+                Log.i(BT_TAG, "Disconnected from GATT server.")
+                startBluetoothScan()
+            }
+        }
+
+
+        @SuppressLint("MissingPermission")
+        override fun onServicesDiscovered(gatt: BluetoothGatt, status: Int) {
+            super.onServicesDiscovered(gatt, status)
+            if (status == BluetoothGatt.GATT_SUCCESS) {
+                Log.i(BT_TAG, "Services discovered.")
+                // Find the service and characteristic you want to use
+                //todo figure out appropriate long-term values for these
+                findTargetCharacteristic(gatt)
+                if (targetReadCharacteristic != null) {
+                    Log.i(BT_TAG, "Characteristic found. Target Read is not null.")
+                    setCharacteristicNotification(targetReadCharacteristic!!, true)
+                } else {
+                    Log.e(BT_TAG, "Characteristic not found.")
+                }
+            } else {
+                Log.w(BT_TAG, "onServicesDiscovered received: $status")
+            }
+        }
+
+        override fun onCharacteristicWrite(
+            gatt: BluetoothGatt,
+            characteristic: BluetoothGattCharacteristic,
+            status: Int
+        ) {
+            super.onCharacteristicWrite(gatt, characteristic, status)
+            if (status == BluetoothGatt.GATT_SUCCESS) {
+                Log.i(BT_TAG, "Characteristic write successful.")
+            } else {
+                Log.e(BT_TAG, "Characteristic write failed with status: $status")
+            }
+        }
+
+        override fun onCharacteristicRead(
+            gatt: BluetoothGatt,
+            characteristic: BluetoothGattCharacteristic,
+            value: ByteArray,
+            status: Int
+        ) {
+            super.onCharacteristicRead(gatt, characteristic, value, status)
+            val receivedMessage = String(value, Charsets.UTF_8)
+            Log.i(BT_TAG, "Received READ Message $receivedMessage")
+        }
+
+        //todo verify if this deprecated method is getting hit and, if not, delete it
+        override fun onCharacteristicChanged(
+            gatt: BluetoothGatt,
+            characteristic: BluetoothGattCharacteristic
+        ) {
+            super.onCharacteristicChanged(gatt, characteristic)
+            val receivedMessage = String(characteristic.value, Charsets.UTF_8)
+            Log.i(BT_TAG, "Received CHANGED Message $receivedMessage")
+        }
+
+        override fun onMtuChanged(gatt: BluetoothGatt, mtu: Int, status: Int) {
+            super.onMtuChanged(gatt, mtu, status)
+            Log.i(BT_TAG, "MTU CHANGED: mtu = $mtu status = $status")
+        }
+    }
+
+    private fun requestBluetoothPermissions() {
+        if (bluetoothPermissions.all {
+                ActivityCompat.checkSelfPermission(
+                    this,
+                    it
+                ) == PackageManager.PERMISSION_GRANTED
+            }) {
+            startBluetoothScan()
+        } else {
+            ActivityCompat.requestPermissions(this, bluetoothPermissions, bluetoothRequestCode)
+        }
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == bluetoothRequestCode) {
+            if (grantResults.all { it == PackageManager.PERMISSION_GRANTED }) {
+                // Permissions granted, proceed with Bluetooth operations
+                startBluetoothScan()
+            } else {
+                // todo Permissions denied, handle accordingly (e.g., show a message)
+                Toast.makeText(this, "Need Bluetooth Permissions", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun startBluetoothScan() {
+        Log.i(ANTARCTICA, "starting bluetooth scan")
+        bluetoothLeScanner?.startScan(scanCallback)
+
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun stopBluetoothScan() {
+        Log.i(ANTARCTICA, "stopping bluetooth scan")
+        bluetoothLeScanner?.stopScan(scanCallback)
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun connectToDevice(device: BluetoothDevice?) {
+        bluetoothGatt = device?.connectGatt(this, false, gattCallback)
+    }
+
+    @SuppressLint("MissingPermission")
+    fun sendMessage(message: String) {
+        Log.i(ANTARCTICA, "Send Message Pressed.")
+        if (targetWriteCharacteristic == null) {
+            Log.e(BT_TAG, "Characteristic not found.")
+//            todo: remove this toast
+            Toast.makeText(
+                this,
+                "Whoops, something went wrong with the BT Characteristic.",
+                Toast.LENGTH_SHORT
+            ).show()
+            return
+        } else {
+            // Convert the message to bytes
+            val messageBytes = message.toByteArray(Charsets.UTF_8)
+            var currCharacteristic = targetWriteCharacteristic
+            if (currCharacteristic != null) {
+                bluetoothGatt?.writeCharacteristic(
+                    currCharacteristic,
+                    messageBytes,
+                    BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
+                )
+            }
+        }
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun setCharacteristicNotification(
+        characteristic: BluetoothGattCharacteristic,
+        enabled: Boolean
+    ) {
+        MICROPY_TX_UUID
+        bluetoothGatt?.let { gatt ->
+            gatt.setCharacteristicNotification(characteristic, enabled)
+            if (characteristic.uuid == UUID.fromString(MICROPY_TX_UUID)) {
+                val descriptor = characteristic.getDescriptor(UUID.fromString(MICROPY_TX_UUID))
+                //todo note to self - descriptor is null because found charactersitic doesn't match TX UUID
+                if (descriptor != null) {
+                    descriptor.value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
+                    gatt.writeDescriptor(descriptor)
+                } else {
+                    Log.e(BT_TAG, "Descriptor not found.")
+                }
+            } else {
+                Log.e(BT_TAG, "BluetoothGatt not intialized.")
+            }
+        }
+    }
+
+    /**
+     * BluetoothGatt has a list of services, which each have a list of characteristics.
+     * Find the service that matches our Pico's UUID, then find its characteristic that has
+     * the UUID we'd like to write to. Return it. *note* the UUID's are very similar, but slightly different.
+     */
+    private fun findTargetCharacteristic(gatt: BluetoothGatt) {
+        for (service in gatt.services) {
+            Log.i(BT_TAG, "Service UUID: ${service.uuid}")
+            if (service.uuid.toString().equals(MICROPY_UUID, ignoreCase = true)) {
+                for (characteristic in service.characteristics) {
+                    Log.i(BT_TAG, "Characteristic UUID: ${characteristic.uuid}")
+                    if (characteristic.uuid.toString().equals(MICROPY_RX_UUID, ignoreCase = true)) {
+                        targetWriteCharacteristic = characteristic
+                    }
+                    if (characteristic.uuid.toString().equals(MICROPY_TX_UUID, ignoreCase = true)) {
+                        targetReadCharacteristic = characteristic
+                    }
+                }
+            }
+        }
+    }
+}
