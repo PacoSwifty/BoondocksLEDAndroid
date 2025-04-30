@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <dimen name="padding_large">36dp</dimen>
     <dimen name="padding_medium">16dp</dimen>
     <dimen name="padding_small">8dp</dimen>
     <dimen name="card_elevation">5dp</dimen>
+
+    <dimen name="van_light_thickness">20dp</dimen>
+    <dimen name="van_lightbar_width">80dp</dimen>
+    <dimen name="van_standard_light_width">40dp</dimen>
 </resources>

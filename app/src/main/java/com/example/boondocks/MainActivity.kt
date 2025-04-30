@@ -22,6 +22,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
@@ -30,11 +31,14 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.graphics.Color
 import androidx.core.app.ActivityCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.navigation.NavBackStackEntry
+import androidx.navigation.NavDestination
+import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.boondocks.data.Constants.ANTARCTICA
@@ -89,7 +93,8 @@ class MainActivity : ComponentActivity() {
             BoondocksApp()
         }
 
-        requestBluetoothPermissions()
+        //todo uncomment this and add a loading indicator
+//        requestBluetoothPermissions()
         collectLightsMessage()
 
     }
@@ -107,17 +112,30 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     fun BoondocksApp() {
-        BoondocksTheme {
-            val navController = rememberNavController()
-            val currentBackStack by navController.currentBackStackEntryAsState()
-            val currentDestination = currentBackStack?.destination
+        val navController = rememberNavController()
+        val currentBackStack by navController.currentBackStackEntryAsState()
+        val currentDestination = currentBackStack?.destination
 
+        AppScreenContent(navController, currentBackStack, currentDestination)
+    }
+
+    @Composable
+    fun AppScreenContent(
+        navController: NavHostController,
+        currentBackStack: NavBackStackEntry?,
+        currentDestination: NavDestination?
+    ) {
+        BoondocksTheme {
             val currentScreen =
                 tabRowScreens.find { it.route == currentDestination?.route } ?: Lights
             Scaffold(
                 topBar = {
                     Column() {
-                        Box(modifier = Modifier.statusBarsPadding())
+                        Box(
+                            modifier = Modifier
+                                .statusBarsPadding()
+                                .background(Color.Yellow)
+                        )
                         TabRow(
                             allScreens = tabRowScreens,
                             onTabSelected = { newScreen ->
@@ -137,15 +155,9 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    @Preview
-    @Composable
-    fun BoondocksAppPreview() {
-        BoondocksApp()
-    }
-
 
     /** ---------- Below this Point is all the Bluetooth Code ---------- **/
-
+//region bluetooth
     private val scanCallback = object : ScanCallback() {
         @SuppressLint("MissingPermission")
         override fun onScanResult(callbackType: Int, result: ScanResult?) {
@@ -335,7 +347,7 @@ class MainActivity : ComponentActivity() {
             gatt.setCharacteristicNotification(characteristic, enabled)
             if (characteristic.uuid == UUID.fromString(MICROPY_TX_UUID)) {
                 val descriptor = characteristic.getDescriptor(UUID.fromString(MICROPY_TX_UUID))
-                //todo note to self - descriptor is null because found charactersitic doesn't match TX UUID
+                //todo note to self - descriptor is null because found characteristic doesn't match TX UUID
                 if (descriptor != null) {
                     descriptor.value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
                     gatt.writeDescriptor(descriptor)
@@ -343,7 +355,7 @@ class MainActivity : ComponentActivity() {
                     Log.e(BT_TAG, "Descriptor not found.")
                 }
             } else {
-                Log.e(BT_TAG, "BluetoothGatt not intialized.")
+                Log.e(BT_TAG, "BluetoothGatt not initialized.")
             }
         }
     }
@@ -369,4 +381,6 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    //endregion
 }
