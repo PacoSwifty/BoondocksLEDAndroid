@@ -1,7 +1,9 @@
 package com.example.boondocks.ui.lights
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.boondocks.data.Constants.ANTARCTICA
 import com.example.boondocks.data.LightsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -39,6 +41,10 @@ class LightsViewModel @Inject constructor(
 
     fun onScene3Clicked() {
         sceneSelected(3)
+    }
+
+    fun onToggleLightClicked(lightId: LightList) {
+        Log.i(ANTARCTICA, "toggle light clicked: $lightId")
     }
 
     /**

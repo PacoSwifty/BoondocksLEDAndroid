@@ -43,6 +43,10 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.boondocks.data.Constants.ANTARCTICA
 import com.example.boondocks.ui.components.TabRow
+import com.example.boondocks.ui.navigation.BoondocksNavHost
+import com.example.boondocks.ui.navigation.Lights
+import com.example.boondocks.ui.navigation.navigateSingleTopTo
+import com.example.boondocks.ui.navigation.tabRowScreens
 import com.example.boondocks.ui.theme.BoondocksTheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch

@@ -1,11 +1,10 @@
 package com.example.boondocks.ui.lights
 
-import android.content.res.Configuration
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
@@ -36,7 +35,8 @@ fun LightsScreen(lightsViewModel: LightsViewModel = hiltViewModel()) {
     LightsContent(
         scene1OnClick = { lightsViewModel.onScene1Clicked() },
         scene2OnClick = { lightsViewModel.onScene2Clicked() },
-        scene3OnClick = { lightsViewModel.onScene3Clicked() }
+        scene3OnClick = { lightsViewModel.onScene3Clicked() },
+        toggleLightOnClick = { lightsViewModel.onToggleLightClicked(it) }
     )
 
 }
@@ -45,7 +45,9 @@ fun LightsScreen(lightsViewModel: LightsViewModel = hiltViewModel()) {
 fun LightsContent(
     scene1OnClick: () -> Unit,
     scene2OnClick: () -> Unit,
-    scene3OnClick: () -> Unit) {
+    scene3OnClick: () -> Unit,
+    toggleLightOnClick: (lightId: LightList) -> Unit
+) {
 
 
     Column(
@@ -60,35 +62,23 @@ fun LightsContent(
             { scene1OnClick() },
             { scene2OnClick() },
             { scene3OnClick() },
-            modifier = Modifier)
+            modifier = Modifier
+        )
 
         Spacer(modifier = Modifier.padding(dimensionResource(R.dimen.padding_large)))
 
-        LightPicker(modifier = Modifier)
+        LightPicker(
+            onToggleLightclicked = { toggleLightOnClick(it) },
+            modifier = Modifier
+        )
 
     }
 }
 
-@Composable
-fun LightPicker(modifier: Modifier = Modifier) {
 
-    Card(
-        elevation = CardDefaults.cardElevation(defaultElevation = dimensionResource(R.dimen.card_elevation)),
-        modifier = modifier) {
-        Column(
-            modifier = modifier
-                .padding(dimensionResource(R.dimen.padding_medium))
-                .size(width = 200.dp, height = 100.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.padding_medium))
-        ) {
-
-
-        }
-    }
-}
-
-
+/**
+ * For the three buttons Scene I, Scene II, and Scene III
+ */
 @Composable
 fun ScenePicker(
     onScene1Clicked: () -> Unit,
@@ -133,10 +123,112 @@ fun ScenePicker(
     }
 }
 
+
+/**
+ * For toggling lights around the van
+ */
+@Composable
+fun LightPicker(
+    onToggleLightclicked: (lightId: LightList) -> Unit,
+    modifier: Modifier = Modifier
+) {
+
+    Card(
+        elevation = CardDefaults.cardElevation(defaultElevation = dimensionResource(R.dimen.card_elevation)),
+        modifier = modifier
+    ) {
+        Column(
+            modifier = modifier
+                .padding(dimensionResource(R.dimen.padding_medium))
+                .fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.padding_medium))
+        ) {
+
+            // Driver Side Lights
+            Row(modifier = modifier) {
+                ToggleLight(
+                    LightList.BACK_DRIVER,
+                    dimensionResource(R.dimen.van_standard_light_width),
+                    dimensionResource(R.dimen.van_light_thickness),
+                    onToggleLightclicked
+                )
+
+                Spacer(modifier = Modifier.padding(dimensionResource(R.dimen.padding_medium)))
+
+                ToggleLight(
+                    LightList.FRONT_DRIVER,
+                    dimensionResource(R.dimen.van_standard_light_width),
+                    dimensionResource(R.dimen.van_light_thickness),
+                    onToggleLightclicked
+                )
+            }
+
+            //Rear lights and front light bar
+            Row(modifier = modifier) {
+
+                //Rear Lights
+                Column(
+                    modifier = modifier.fillMaxHeight(),
+                    horizontalAlignment = Alignment.Start
+                ) {
+
+                    ToggleLight(
+                        LightList.REAR_DRIVER,
+                        dimensionResource(R.dimen.van_light_thickness),
+                        dimensionResource(R.dimen.van_standard_light_width),
+                        onToggleLightclicked
+                    )
+
+                    Spacer(modifier = modifier.size(30.dp))
+
+                    ToggleLight(
+                        LightList.REAR_PASSENGER,
+                        dimensionResource(R.dimen.van_light_thickness),
+                        dimensionResource(R.dimen.van_standard_light_width),
+                        onToggleLightclicked
+                    )
+                }
+
+                Spacer(modifier = modifier.weight(1f))
+
+                // Light Bar
+                ToggleLight(
+                    LightList.LIGHT_BAR,
+                    dimensionResource(R.dimen.van_light_thickness),
+                    dimensionResource(R.dimen.van_lightbar_width),
+                    onToggleLightclicked
+                )
+            }
+
+            // Passenger  Side Lights
+            Row(modifier = modifier) {
+
+                ToggleLight(
+                    LightList.BACK_PASSENGER,
+                    dimensionResource(R.dimen.van_standard_light_width),
+                    dimensionResource(R.dimen.van_light_thickness),
+                    onToggleLightclicked
+                )
+
+                Spacer(modifier = Modifier.padding(dimensionResource(R.dimen.padding_medium)))
+
+                ToggleLight(
+                    LightList.FRONT_PASSENGER,
+                    dimensionResource(R.dimen.van_standard_light_width),
+                    dimensionResource(R.dimen.van_light_thickness),
+                    onToggleLightclicked
+                )
+            }
+
+        }
+    }
+}
+
 @Preview(showSystemUi = true, showBackground = true)
 @Composable
 fun LightContentPreview() {
     BoondocksTheme {
-        LightsContent({}, {}, {})
+        LightsContent({}, {}, {}, {})
     }
 }
