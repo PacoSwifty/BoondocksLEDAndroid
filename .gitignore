@@ -14,3 +14,7 @@
 .cxx
 local.properties
 .idea/vcs.xml
+.idea/misc.xml
+.idea/.name
+.idea/AndroidProjectSystem.xml
+.idea/codeStyles/
