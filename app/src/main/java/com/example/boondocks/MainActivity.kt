@@ -317,7 +317,6 @@ class MainActivity : ComponentActivity() {
 
     @SuppressLint("MissingPermission")
     fun sendMessage(message: String) {
-        Log.i(ANTARCTICA, "Send Message Pressed.")
         if (targetWriteCharacteristic == null) {
             Log.e(BT_TAG, "Characteristic not found.")
 //            todo: remove this toast
