@@ -7,4 +7,14 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
+
+    // our colors
+
+    val DrabDarkBrown = Color(0xFF3B3923)
+    val AshGray = Color(0xFFB4B8AB)
+    val AlloyOrange = Color(0xFFBC5F04)
+    <color name="DrabDarkBrown">#FF3B3923</color>
+    <color name="AshGray">#FFB4B8AB</color>
+    <color name="AlloyOrange">#FFBC5F04</color>
 </resources>

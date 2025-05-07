@@ -1,4 +1,4 @@
-package com.example.boondocks
+package com.example.boondocks.ui.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController

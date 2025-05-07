@@ -29,7 +29,7 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.example.boondocks.BoondocksDestination
+import com.example.boondocks.ui.navigation.BoondocksDestination
 import java.util.Locale
 
 

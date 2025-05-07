@@ -1,8 +1,12 @@
 package com.example.boondocks.ui.lights
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.boondocks.data.Constants.ANTARCTICA
 import com.example.boondocks.data.LightsRepository
+import com.example.boondocks.ui.lights.scenePicker.LightsSceneMessage
+import com.example.boondocks.ui.lights.toggleLights.LightList
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -39,6 +43,33 @@ class LightsViewModel @Inject constructor(
 
     fun onScene3Clicked() {
         sceneSelected(3)
+    }
+
+    fun onToggleLightClicked(lightId: LightList) {
+        Log.i(ANTARCTICA, "toggle light clicked: $lightId")
+        when (lightId) {
+            LightList.FRONT_DRIVER -> {
+                _uiState.value = _uiState.value.copy(frontDriverEnabled = !_uiState.value.frontDriverEnabled)
+            }
+            LightList.REAR_DRIVER -> {
+                _uiState.value = _uiState.value.copy(rearDriverEnabled = !_uiState.value.rearDriverEnabled)
+            }
+            LightList.BACK_DRIVER -> {
+                _uiState.value = _uiState.value.copy(backDriveEnabled = !_uiState.value.backDriveEnabled)
+            }
+            LightList.FRONT_PASSENGER -> {
+                _uiState.value = _uiState.value.copy(frontPassengerEnabled = !_uiState.value.frontPassengerEnabled)
+            }
+            LightList.REAR_PASSENGER -> {
+                _uiState.value = _uiState.value.copy(rearPassengerEnabled = !_uiState.value.rearPassengerEnabled)
+            }
+            LightList.BACK_PASSENGER -> {
+                _uiState.value = _uiState.value.copy(backPassengerEnabled = !_uiState.value.backPassengerEnabled)
+            }
+            LightList.LIGHT_BAR -> {
+                _uiState.value = _uiState.value.copy(lightBarEnabled = !_uiState.value.lightBarEnabled)
+            }
+        }
     }
 
     /**

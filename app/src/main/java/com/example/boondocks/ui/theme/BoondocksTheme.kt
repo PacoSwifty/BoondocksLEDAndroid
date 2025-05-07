@@ -40,6 +40,8 @@ fun BoondocksTheme(
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {
+
+        //todo: note to self, maybe comment this block and just leave the if/else below it
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
             val context = LocalContext.current
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
