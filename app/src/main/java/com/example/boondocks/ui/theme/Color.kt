@@ -12,7 +12,7 @@ val Pink40 = Color(0xFF7D5260)
 
 
 // our colors
-
+//todo figure out how themes work?
 val DrabDarkBrown = Color(0xFF3B3923)
 val AshGray = Color(0xFFB4B8AB)
 val AlloyOrange = Color(0xFFBC5F04)

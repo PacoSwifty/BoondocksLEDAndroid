@@ -1,4 +1,4 @@
-package com.example.boondocks.ui.lights
+package com.example.boondocks.ui.lights.scenePicker
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable

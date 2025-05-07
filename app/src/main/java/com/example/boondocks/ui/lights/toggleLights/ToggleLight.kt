@@ -1,13 +1,15 @@
-package com.example.boondocks.ui.lights
+package com.example.boondocks.ui.lights.toggleLights
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.unit.Dp
+import com.example.boondocks.R
 
 enum class LightList {
     FRONT_DRIVER,
@@ -24,16 +26,21 @@ fun ToggleLight(
     lightId: LightList,
     width: Dp,
     height: Dp,
+    enabled: Boolean,
     onLightClicked: (id: LightList) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Box(
+
+    Button(
+        onClick = { onLightClicked(lightId) },
+//        colors = ButtonDefaults.buttonColors(containerColor = colorResource(R.color.AlloyOrange)),
+        colors = if (enabled) ButtonDefaults.buttonColors(containerColor = colorResource(R.color.AlloyOrange))
+                else ButtonDefaults.buttonColors(containerColor = Color.Gray),
         modifier = modifier
             .size(
                 width = width,
                 height = height
             )
-            .background(Color.Blue)
-            .clickable { onLightClicked(lightId) })
-    
+
+    ) {}
 }
