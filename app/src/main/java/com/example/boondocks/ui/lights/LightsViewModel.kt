@@ -6,7 +6,11 @@ import androidx.lifecycle.viewModelScope
 import com.example.boondocks.data.Constants.ANTARCTICA
 import com.example.boondocks.data.LightsRepository
 import com.example.boondocks.ui.lights.scenePicker.LightsSceneMessage
+import com.example.boondocks.ui.lights.toggleLights.DriverLightToggleMessage
+import com.example.boondocks.ui.lights.toggleLights.LightBarToggleMessage
 import com.example.boondocks.ui.lights.toggleLights.LightList
+import com.example.boondocks.ui.lights.toggleLights.PassengerLightToggleMessage
+import com.example.boondocks.ui.lights.toggleLights.WorkLightToggleMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -48,28 +52,53 @@ class LightsViewModel @Inject constructor(
     fun onToggleLightClicked(lightId: LightList) {
         Log.i(ANTARCTICA, "toggle light clicked: $lightId")
         when (lightId) {
-            LightList.FRONT_DRIVER -> {
-                _uiState.value = _uiState.value.copy(frontDriverEnabled = !_uiState.value.frontDriverEnabled)
+            LightList.FRONT_DRIVER, LightList.BACK_DRIVER -> {
+                _uiState.value =
+                    _uiState.value.copy(frontDriverEnabled = !_uiState.value.frontDriverEnabled)
+                _uiState.value =
+                    _uiState.value.copy(backDriveEnabled = !_uiState.value.backDriveEnabled)
+                handleToggleJson(LightList.FRONT_DRIVER, _uiState.value.frontDriverEnabled)
             }
-            LightList.REAR_DRIVER -> {
-                _uiState.value = _uiState.value.copy(rearDriverEnabled = !_uiState.value.rearDriverEnabled)
+
+            LightList.FRONT_PASSENGER, LightList.BACK_PASSENGER -> {
+                _uiState.value =
+                    _uiState.value.copy(frontPassengerEnabled = !_uiState.value.frontPassengerEnabled)
+                _uiState.value =
+                    _uiState.value.copy(backPassengerEnabled = !_uiState.value.backPassengerEnabled)
+                handleToggleJson(LightList.FRONT_PASSENGER, _uiState.value.frontPassengerEnabled)
+
             }
-            LightList.BACK_DRIVER -> {
-                _uiState.value = _uiState.value.copy(backDriveEnabled = !_uiState.value.backDriveEnabled)
+
+            LightList.REAR_DRIVER, LightList.REAR_PASSENGER -> {
+                _uiState.value =
+                    _uiState.value.copy(rearDriverEnabled = !_uiState.value.rearDriverEnabled)
+                _uiState.value =
+                    _uiState.value.copy(rearPassengerEnabled = !_uiState.value.rearPassengerEnabled)
+                handleToggleJson(LightList.REAR_DRIVER, _uiState.value.rearDriverEnabled)
             }
-            LightList.FRONT_PASSENGER -> {
-                _uiState.value = _uiState.value.copy(frontPassengerEnabled = !_uiState.value.frontPassengerEnabled)
-            }
-            LightList.REAR_PASSENGER -> {
-                _uiState.value = _uiState.value.copy(rearPassengerEnabled = !_uiState.value.rearPassengerEnabled)
-            }
-            LightList.BACK_PASSENGER -> {
-                _uiState.value = _uiState.value.copy(backPassengerEnabled = !_uiState.value.backPassengerEnabled)
-            }
+
             LightList.LIGHT_BAR -> {
-                _uiState.value = _uiState.value.copy(lightBarEnabled = !_uiState.value.lightBarEnabled)
+                _uiState.value =
+                    _uiState.value.copy(lightBarEnabled = !_uiState.value.lightBarEnabled)
+                handleToggleJson(LightList.LIGHT_BAR, _uiState.value.lightBarEnabled)
             }
         }
+    }
+
+    fun handleToggleJson(lightId: LightList, enabled: Boolean) {
+        val valueString = if (enabled) "On" else "Off"
+
+        val message = when (lightId) {
+            LightList.FRONT_DRIVER, LightList.BACK_DRIVER -> DriverLightToggleMessage(valueString).toString()
+            LightList.FRONT_PASSENGER, LightList.BACK_PASSENGER -> PassengerLightToggleMessage(
+                valueString
+            ).toString()
+
+            LightList.REAR_DRIVER, LightList.REAR_PASSENGER -> WorkLightToggleMessage(valueString).toString()
+            LightList.LIGHT_BAR -> LightBarToggleMessage(valueString).toString()
+        }
+
+        emitJsonMessage(message)
     }
 
     /**
