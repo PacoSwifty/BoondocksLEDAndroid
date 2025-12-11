@@ -19,6 +19,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Boondocks"
+rootProject.name = "BoondocksLED"
 include(":app")
  

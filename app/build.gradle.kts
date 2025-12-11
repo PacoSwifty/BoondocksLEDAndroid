@@ -9,11 +9,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.boondocks"
+    namespace = "com.example.boondocks_led"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.example.boondocks"
+        applicationId = "com.example.boondocks_led"
         minSdk = 33
         targetSdk = 35
         versionCode = 1
