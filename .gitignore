@@ -13,8 +13,10 @@
 .externalNativeBuild
 .cxx
 local.properties
+.idea/
 .idea/vcs.xml
 .idea/misc.xml
 .idea/.name
 .idea/AndroidProjectSystem.xml
 .idea/codeStyles/
+.kotlin/errors/
