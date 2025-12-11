@@ -52,9 +52,23 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import java.util.UUID
 
-const val MICROPY_UUID = "6E400001-B5A3-F393-E0A9-E50E24DCCA9E"
-const val MICROPY_RX_UUID = "6e400002-b5a3-f393-e0a9-e50e24dcca9e" // Write to this UUID
-const val MICROPY_TX_UUID = "6e400003-b5a3-f393-e0a9-e50e24dcca9e" // Read from this UUID
+//This is the OG Pico Board that we POC'd on
+//const val MICROPY_UUID = "6E400001-B5A3-F393-E0A9-E50E24DCCA9E"
+//const val MICROPY_RX_UUID = "6e400002-b5a3-f393-e0a9-e50e24dcca9e" // Write to this UUID
+//const val MICROPY_TX_UUID = "6e400003-b5a3-f393-e0a9-e50e24dcca9e" // Read from this UUID
+
+
+//These are UUID's for the Controller Board and characteristics we might want to write to or read from
+const val BOON_SERVICE_UUID = "b00d0c55-1111-2222-3333-0000b00d0c50"
+const val CHARACTERISTIC_READ_CONFIG = "b00d0c55-1111-2222-3333-0000b00d0c51"
+const val CHARACTERISTIC_LED_SET = "b00d0c55-1111-2222-3333-0000b00d0c52"
+const val CHARACTERISTIC_BRIGHT_SET = "b00d0c55-1111-2222-3333-0000b00d0c53"
+const val CHARACTERISTIC_ALL_OFF = "b00d0c55-1111-2222-3333-0000b00d0c54"
+const val CHARACTERISTIC_SCENE_SELECT = "b00d0c55-1111-2222-3333-0000b00d0c55"
+const val CHARACTERISTIC_SCENE_SAVE = "b00d0c55-1111-2222-3333-0000b00d0c56"
+const val CHARACTERISTIC_CTRL_TYPE_SET = "b00d0c55-1111-2222-3333-0000b00d0c57"
+
+
 const val BT_TAG = "Bluetooth"
 
 
@@ -98,7 +112,7 @@ class MainActivity : ComponentActivity() {
         }
 
         //todo uncomment this and add a loading indicator
-//        requestBluetoothPermissions()
+        requestBluetoothPermissions()
         collectLightsMessage()
 
     }
@@ -171,11 +185,22 @@ class MainActivity : ComponentActivity() {
             val device: BluetoothDevice? = result?.device
             val deviceName = device?.name ?: "Unknown Device"
             val deviceAddress = device?.address
+
+            //Get UUIDs from scan record
+            val serviceUuids = result?.scanRecord?.serviceUuids
+            if (serviceUuids != null && serviceUuids.isNotEmpty()) {
+                serviceUuids.forEach { uuid ->
+                    Log.d(BT_TAG, "Device: $deviceName,Service UUID: ${uuid.uuid}")
+                }
+            } else {
+                Log.d(BT_TAG, "Device: $deviceName, NO SERVICE UUIDs advertised!")
+            }
+
             Log.d(BT_TAG, "Found device: $deviceName, Address: $deviceAddress")
             //todo: display list of devices and let user pick one, or decide if we can hardcode it?
 
             //todo remove hardcode device selection
-            if (deviceName == "mpy-uart") {
+            if (deviceName == "BoonLED") {
                 targetDevice = device
                 stopBluetoothScan()
                 connectToDevice(device)
@@ -199,8 +224,7 @@ class MainActivity : ComponentActivity() {
                     BT_TAG,
                     "Attempting to start service discovery: ${bluetoothGatt?.discoverServices()}"
                 )
-                Log.i(BT_TAG, "Requesting MTU: 512")
-                bluetoothGatt?.requestMtu(512)
+
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                 Log.i(BT_TAG, "Disconnected from GATT server.")
                 startBluetoothScan()
@@ -213,12 +237,16 @@ class MainActivity : ComponentActivity() {
             super.onServicesDiscovered(gatt, status)
             if (status == BluetoothGatt.GATT_SUCCESS) {
                 Log.i(BT_TAG, "Services discovered.")
+                Log.i(BT_TAG, "Requesting MTU: 512")
+                bluetoothGatt?.requestMtu(512)
+
                 // Find the service and characteristic you want to use
                 //todo figure out appropriate long-term values for these
                 findTargetCharacteristic(gatt)
                 if (targetReadCharacteristic != null) {
                     Log.i(BT_TAG, "Characteristic found. Target Read is not null.")
-                    setCharacteristicNotification(targetReadCharacteristic!!, true)
+                    //todo uncomment this and set up the read characteristic in the below, commented out, method
+//                    setCharacteristicNotification(targetReadCharacteristic!!, true)
                 } else {
                     Log.e(BT_TAG, "Characteristic not found.")
                 }
@@ -331,6 +359,8 @@ class MainActivity : ComponentActivity() {
             val messageBytes = message.toByteArray(Charsets.UTF_8)
             var currCharacteristic = targetWriteCharacteristic
             if (currCharacteristic != null) {
+                Log.i(BT_TAG, "message: $message")
+                Log.i(BT_TAG, "message bytes: $messageBytes")
                 bluetoothGatt?.writeCharacteristic(
                     currCharacteristic,
                     messageBytes,
@@ -340,46 +370,49 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    @SuppressLint("MissingPermission")
-    private fun setCharacteristicNotification(
-        characteristic: BluetoothGattCharacteristic,
-        enabled: Boolean
-    ) {
-        MICROPY_TX_UUID
-        bluetoothGatt?.let { gatt ->
-            gatt.setCharacteristicNotification(characteristic, enabled)
-            if (characteristic.uuid == UUID.fromString(MICROPY_TX_UUID)) {
-                val descriptor = characteristic.getDescriptor(UUID.fromString(MICROPY_TX_UUID))
-                //todo note to self - descriptor is null because found characteristic doesn't match TX UUID
-                if (descriptor != null) {
-                    descriptor.value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
-                    gatt.writeDescriptor(descriptor)
-                } else {
-                    Log.e(BT_TAG, "Descriptor not found.")
-                }
-            } else {
-                Log.e(BT_TAG, "BluetoothGatt not initialized.")
-            }
-        }
-    }
+    //todo uncomment this to be able to read messages back from the board (I think?)
+//    @SuppressLint("MissingPermission")
+//    private fun setCharacteristicNotification(
+//        characteristic: BluetoothGattCharacteristic,
+//        enabled: Boolean
+//    ) {
+//        MICROPY_TX_UUID
+//        bluetoothGatt?.let { gatt ->
+//            gatt.setCharacteristicNotification(characteristic, enabled)
+//            if (characteristic.uuid == UUID.fromString(MICROPY_TX_UUID)) {
+//                val descriptor = characteristic.getDescriptor(UUID.fromString(MICROPY_TX_UUID))
+//                //todo note to self - descriptor is null because found characteristic doesn't match TX UUID
+//                if (descriptor != null) {
+//                    descriptor.value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
+//                    gatt.writeDescriptor(descriptor)
+//                } else {
+//                    Log.e(BT_TAG, "Descriptor not found.")
+//                }
+//            } else {
+//                Log.e(BT_TAG, "BluetoothGatt not initialized.")
+//            }
+//        }
+//    }
 
     /**
      * BluetoothGatt has a list of services, which each have a list of characteristics.
      * Find the service that matches our Pico's UUID, then find its characteristic that has
      * the UUID we'd like to write to. Return it. *note* the UUID's are very similar, but slightly different.
+     *
+     * //todo set up the new characteristics from Boon Json Messages
      */
     private fun findTargetCharacteristic(gatt: BluetoothGatt) {
         for (service in gatt.services) {
             Log.i(BT_TAG, "Service UUID: ${service.uuid}")
-            if (service.uuid.toString().equals(MICROPY_UUID, ignoreCase = true)) {
+            if (service.uuid.toString().equals(BOON_SERVICE_UUID, ignoreCase = true)) {
                 for (characteristic in service.characteristics) {
                     Log.i(BT_TAG, "Characteristic UUID: ${characteristic.uuid}")
-                    if (characteristic.uuid.toString().equals(MICROPY_RX_UUID, ignoreCase = true)) {
+                    if (characteristic.uuid.toString().equals(CHARACTERISTIC_LED_SET, ignoreCase = true)) {
                         targetWriteCharacteristic = characteristic
                     }
-                    if (characteristic.uuid.toString().equals(MICROPY_TX_UUID, ignoreCase = true)) {
-                        targetReadCharacteristic = characteristic
-                    }
+//                    if (characteristic.uuid.toString().equals(MICROPY_TX_UUID, ignoreCase = true)) {
+//                        targetReadCharacteristic = characteristic
+//                    }
                 }
             }
         }
