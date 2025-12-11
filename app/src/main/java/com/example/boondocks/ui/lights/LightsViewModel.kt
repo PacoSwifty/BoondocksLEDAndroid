@@ -98,7 +98,8 @@ class LightsViewModel @Inject constructor(
             LightList.LIGHT_BAR -> LightBarToggleMessage(valueString).toString()
         }
 
-        emitJsonMessage(message)
+        val testBoardMessage = "{\"4\": {\"R\":\"255\", \"G\":\"0\", \"B\":\"0\", \"W\":\"0\"}}"
+        emitJsonMessage(testBoardMessage)
     }
 
     /**
