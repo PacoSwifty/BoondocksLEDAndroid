@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Boondocks</string>
+    <string name="app_name">Boondocks LED Controller</string>
 
     <string name="scene1">Scene I</string>
     <string name="scene2">Scene II</string>

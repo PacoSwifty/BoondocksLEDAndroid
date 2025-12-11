@@ -1,0 +1,11 @@
+package com.example.boondocks_led.ui.lights.scenePicker
+
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+
+@Serializable
+data class LightsSceneMessage(
+
+    @SerialName("LEDScene")
+    val scene: Int
+)
