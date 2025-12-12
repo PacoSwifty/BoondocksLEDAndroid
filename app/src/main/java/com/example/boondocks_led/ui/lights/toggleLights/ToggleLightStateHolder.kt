@@ -1,8 +1,8 @@
 package com.example.boondocks_led.ui.lights.toggleLights
 
-import com.example.boondocks_led.ui.lights.LightsUiState
+import com.example.boondocks_led.ui.lights.OLDLightsUiState
 
-class ToggleLightStateHolder(uiState: LightsUiState) {
+class ToggleLightStateHolder(uiState: OLDLightsUiState) {
     val frontDriverEnabled = uiState.frontDriverEnabled
     val backDriveEnabled = uiState.backDriveEnabled
     val rearDriverEnabled = uiState.rearDriverEnabled

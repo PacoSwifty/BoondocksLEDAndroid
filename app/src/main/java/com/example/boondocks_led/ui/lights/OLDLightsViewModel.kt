@@ -3,7 +3,7 @@ package com.example.boondocks_led.ui.lights
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.boondocks_led.data.Constants.ANTARCTICA
+import com.example.boondocks_led.data.Constants.TAG
 import com.example.boondocks_led.data.LightsRepository
 import com.example.boondocks_led.ui.lights.scenePicker.LightsSceneMessage
 import com.example.boondocks_led.ui.lights.toggleLights.DriverLightToggleMessage
@@ -19,14 +19,14 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import javax.inject.Inject
 
-private val _uiState = MutableStateFlow(LightsUiState())
+private val _uiState = MutableStateFlow(OLDLightsUiState())
 
 @HiltViewModel
 class LightsViewModel @Inject constructor(
     private val lightsRepository: LightsRepository
 ) : ViewModel() {
 
-    val uiState: StateFlow<LightsUiState> = _uiState.asStateFlow()
+    val uiState: StateFlow<OLDLightsUiState> = _uiState.asStateFlow()
 
     //todo: for later reference, here's how to parse a json string into a kotlin data object
     //todo: val jsonString = """{"id":2,"name":"Jane Doe","email_address":"jane.doe@example.com"}"""
@@ -50,7 +50,7 @@ class LightsViewModel @Inject constructor(
     }
 
     fun onToggleLightClicked(lightId: LightList) {
-        Log.i(ANTARCTICA, "toggle light clicked: $lightId")
+        Log.i(TAG, "toggle light clicked: $lightId")
         when (lightId) {
             LightList.FRONT_DRIVER, LightList.BACK_DRIVER -> {
                 _uiState.value =
