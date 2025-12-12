@@ -41,7 +41,7 @@ fun LightsContent(
     scene2OnClick: () -> Unit,
     scene3OnClick: () -> Unit,
     toggleLightOnClick: (lightId: LightList) -> Unit,
-    uiState: LightsUiState = LightsUiState(),
+    uiState: OLDLightsUiState = OLDLightsUiState(),
 ) {
     Column(
         modifier = Modifier

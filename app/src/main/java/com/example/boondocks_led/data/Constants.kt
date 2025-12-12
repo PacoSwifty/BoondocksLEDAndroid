@@ -1,7 +1,7 @@
 package com.example.boondocks_led.data
 
 object Constants {
-    const val ANTARCTICA = "antarctica"
+    const val TAG = "antarctica"
 
 
     //serialization keys

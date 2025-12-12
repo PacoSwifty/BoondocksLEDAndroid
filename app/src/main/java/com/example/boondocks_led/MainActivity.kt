@@ -28,6 +28,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -40,11 +41,11 @@ import androidx.navigation.NavDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.example.boondocks_led.data.Constants.ANTARCTICA
+import com.example.boondocks_led.data.Constants.TAG
 import com.example.boondocks_led.ui.components.TabRow
 import com.example.boondocks_led.ui.navigation.BoondocksNavHost
-import com.example.boondocks_led.ui.navigation.Lights
-import com.example.boondocks_led.ui.navigation.navigateSingleTopTo
+import com.example.boondocks_led.ui.navigation.Controller1
+import com.example.boondocks_led.ui.navigation.navigateToController
 import com.example.boondocks_led.ui.navigation.tabRowScreens
 import com.example.boondocks_led.ui.theme.BoondocksTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -119,7 +120,7 @@ class MainActivity : ComponentActivity() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 mainActivityViewModel.lightsMessageFlow.collect {
-                    Log.i(ANTARCTICA, "received message from Lights Flow: $it")
+                    Log.i(TAG, "received message from Lights Flow: $it")
                     sendMessage(it)
                 }
             }
@@ -142,8 +143,9 @@ class MainActivity : ComponentActivity() {
         currentDestination: NavDestination?
     ) {
         BoondocksTheme {
+
             val currentScreen =
-                tabRowScreens.find { it.route == currentDestination?.route } ?: Lights
+                tabRowScreens.find { it.route == currentDestination?.route } ?: Controller1
             Scaffold(
                 topBar = {
                     Column() {
@@ -155,7 +157,7 @@ class MainActivity : ComponentActivity() {
                         TabRow(
                             allScreens = tabRowScreens,
                             onTabSelected = { newScreen ->
-                                navController.navigateSingleTopTo(newScreen.route)
+                                navController.navigateToController(newScreen.route)
                             },
                             currentScreen = currentScreen,
                         )
@@ -225,7 +227,8 @@ class MainActivity : ComponentActivity() {
 
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                 Log.i(BT_TAG, "Disconnected from GATT server.")
-                startBluetoothScan()
+                //TODO RESTART BLUETOOTH SCAN
+//                startBluetoothScan()
             }
         }
 
@@ -300,7 +303,8 @@ class MainActivity : ComponentActivity() {
                     it
                 ) == PackageManager.PERMISSION_GRANTED
             }) {
-            startBluetoothScan()
+            //TODO RESTART BLUETOOTH SCAN
+//            startBluetoothScan()
         } else {
             ActivityCompat.requestPermissions(this, bluetoothPermissions, bluetoothRequestCode)
         }
@@ -315,7 +319,8 @@ class MainActivity : ComponentActivity() {
         if (requestCode == bluetoothRequestCode) {
             if (grantResults.all { it == PackageManager.PERMISSION_GRANTED }) {
                 // Permissions granted, proceed with Bluetooth operations
-                startBluetoothScan()
+                //TODO RESTART BLUETOOTH SCAN
+//                startBluetoothScan()
             } else {
                 // todo Permissions denied, handle accordingly (e.g., show a message)
                 Toast.makeText(this, "Need Bluetooth Permissions", Toast.LENGTH_LONG).show()
@@ -325,14 +330,14 @@ class MainActivity : ComponentActivity() {
 
     @SuppressLint("MissingPermission")
     private fun startBluetoothScan() {
-        Log.i(ANTARCTICA, "starting bluetooth scan")
+        Log.i(BT_TAG, "starting bluetooth scan")
         bluetoothLeScanner?.startScan(scanCallback)
 
     }
 
     @SuppressLint("MissingPermission")
     private fun stopBluetoothScan() {
-        Log.i(ANTARCTICA, "stopping bluetooth scan")
+        Log.i(BT_TAG, "stopping bluetooth scan")
         bluetoothLeScanner?.stopScan(scanCallback)
     }
 

@@ -1,6 +1,6 @@
 package com.example.boondocks_led.ui.lights
 
-data class LightsUiState(
+data class OLDLightsUiState(
     val currentLightScene: String = "",
 
     val frontDriverEnabled: Boolean = false,

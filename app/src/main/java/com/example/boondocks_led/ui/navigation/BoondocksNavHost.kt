@@ -3,12 +3,10 @@ package com.example.boondocks_led.ui.navigation
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.compose.ui.Modifier
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import com.example.boondocks_led.ui.fridge.FridgeScreen
-import com.example.boondocks_led.ui.lights.LightsScreen
-import com.example.boondocks_led.ui.motors.MotorsScreen
-import com.example.boondocks_led.ui.water.WaterScreen
+import com.example.boondocks_led.ui.ledcontroller.LEDControllerScreen
 
 @Composable
 fun BoondocksNavHost(
@@ -17,25 +15,34 @@ fun BoondocksNavHost(
 ) {
     NavHost(
         navController = navController,
-        startDestination = Lights.route,
+        startDestination = Controller1.route,
         modifier = modifier
     ) {
-        composable(route = Lights.route) {
-            LightsScreen()
+
+        composable(route = Controller1.route) {
+            LEDControllerScreen(controllerId = "1")
         }
-        composable(route = Motors.route) {
-            MotorsScreen()
+
+        composable(route = Controller2.route) {
+            LEDControllerScreen(controllerId = "2")
         }
-        composable(route = Water.route) {
-            WaterScreen()
+
+        composable(route = Controller3.route) {
+            LEDControllerScreen(controllerId = "3")
         }
-        composable(route = Fridge.route) {
-            FridgeScreen()
+
+        composable(route = Controller4.route) {
+            LEDControllerScreen(controllerId = "4")
         }
+
     }
 }
 
-fun NavHostController.navigateSingleTopTo(route: String) =
-    this.navigate(route) {
+fun NavHostController.navigateToController(route: String) =
+    navigate(route) {
         launchSingleTop = true
+        restoreState = true
+        popUpTo(graph.findStartDestination().id) {
+            saveState = true
+        }
     }

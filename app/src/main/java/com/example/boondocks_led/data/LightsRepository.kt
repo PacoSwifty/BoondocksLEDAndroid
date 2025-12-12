@@ -1,7 +1,7 @@
 package com.example.boondocks_led.data
 
 import android.util.Log
-import com.example.boondocks_led.data.Constants.ANTARCTICA
+import com.example.boondocks_led.data.Constants.TAG
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -26,7 +26,7 @@ class LightsRepositoryImpl @Inject constructor() : LightsRepository {
 
     override suspend fun emitLightSceneJsonMessage(message: String) {
         _lightsMessageFlow.emit(message)
-        Log.i(ANTARCTICA, "attempting to emit $message")
+        Log.i(TAG, "attempting to emit $message")
 
     }
 }
