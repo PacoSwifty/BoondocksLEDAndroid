@@ -61,6 +61,8 @@ dependencies {
     ksp(libs.hilt.android.compiler)
 
 
+    implementation("com.github.skydoves:colorpicker-compose:1.0.0")
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

@@ -1,5 +1,7 @@
 package com.example.boondocks_led.data
 
+import android.util.Log
+import com.example.boondocks_led.data.Constants.TAG
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -13,6 +15,7 @@ class LEDControllerRepository @Inject constructor(
 
     fun get(controllerId: String): LEDController {
         return controllers.getOrPut(controllerId) {
+            Log.i(TAG, "Calling create from repository")
             controllerFactory.create(controllerId)
         }
     }
