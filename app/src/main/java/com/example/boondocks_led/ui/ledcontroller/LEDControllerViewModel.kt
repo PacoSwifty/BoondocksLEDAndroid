@@ -1,7 +1,9 @@
 package com.example.boondocks_led.ui.ledcontroller
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.boondocks_led.data.Constants.TAG
 import com.example.boondocks_led.data.LEDController
 import com.example.boondocks_led.data.LEDControllerRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -21,11 +23,16 @@ class LEDControllerViewModel @Inject constructor(
 
     fun init(controllerId: String) {
         if (controller != null) return
+        Log.i(TAG, "Calling get from the viewModel")
         controller = ledControllerRepository.get(controllerId)
 
         viewModelScope.launch {
             controller!!.state.collect { _uiState.value = it }
         }
+    }
+
+    fun onColorSelected(r: Int, g: Int, b: Int) {
+        Log.i(TAG, "Selected color R:$r, G:$g, B:$b")
     }
 
 
