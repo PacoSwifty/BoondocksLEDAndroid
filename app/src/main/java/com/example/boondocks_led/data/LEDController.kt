@@ -24,20 +24,21 @@ class LEDController @Inject constructor(
 ) {
 
     //todo initialize channels if we use those
-    private val _state = MutableStateFlow(LEDControllerState(controllerId = controllerId, name = controllerName, type = controllerType))
+    private val _state = MutableStateFlow(LEDControllerState(
+        controllerId = controllerId,
+        name = controllerName,
+        type = controllerType,
+        isLightOn = false,
+        brightnessSliderValue = 0f))
     val state: StateFlow<LEDControllerState> = _state.asStateFlow()
 
+
+    //todo not using these, mauybe delete?
     fun setRgbw(r: Int, g: Int, b: Int, w: Int) {
         _state.update { it.copy(r = r, g = g, b = b, w = w) }
-        //todo do something, maybe emit to mainactivitys characteristics?
     }
 
     fun setBrightness(value: Int) {
         _state.update { it.copy(brightness = value.coerceIn(0, 255)) }
     }
 }
-
-
-
-    /** needs to have a type, a name, a list of channels, those channels need to be nameable objects */
-

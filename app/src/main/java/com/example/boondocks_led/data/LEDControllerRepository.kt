@@ -25,7 +25,7 @@ class LEDControllerRepository @Inject constructor(
 class LEDControllerFactory @Inject constructor() {
     fun create(
         controllerId: String,
-        controllerName: String = "Me llamo controller $controllerId",
+        controllerName: String = "Controller $controllerId",
         channels: List<String> = listOf("Ch1", "Ch2", "Ch3", "Ch4")
     ): LEDController = LEDController(
         controllerId = controllerId,

@@ -10,9 +10,10 @@ data class LEDControllerState(
     val b: Int = 0,
     val w: Int = 0,
     val brightness: Int = 255,
-    val type: ControllerType = ControllerType.RGBW
+    val type: ControllerType = ControllerType.RGBW,
+    val isLightOn: Boolean,
+    val brightnessSliderValue: Float
     //Considerations
-    // brightness might be a range 0-100
     // might have an array of channels rather than hardcoded rgb?
     //val lastError: String? = null
     //val isConnected: Boolean = false
