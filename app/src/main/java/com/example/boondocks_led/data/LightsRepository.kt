@@ -14,20 +14,25 @@ import javax.inject.Singleton
 
 
 interface LightsRepository {
-    suspend fun emitLightSceneJsonMessage(message: String)
-    val lightsMessageFlow: SharedFlow<String>
+    suspend fun emitSetLightMessage(message: BoonApiMessage)
+    suspend fun emitAllOffMessage(message: BoonApiMessage)
+    val lightsMessageFlow: SharedFlow<BoonApiMessage>
 }
 
 @Singleton
 class LightsRepositoryImpl @Inject constructor() : LightsRepository {
 
-    private val _lightsMessageFlow = MutableSharedFlow<String>(replay = 0, extraBufferCapacity = 1)
-    override val lightsMessageFlow: SharedFlow<String> = _lightsMessageFlow.asSharedFlow()
+    private val _lightsMessageFlow = MutableSharedFlow<BoonApiMessage>(replay = 0, extraBufferCapacity = 1)
+    override val lightsMessageFlow: SharedFlow<BoonApiMessage> = _lightsMessageFlow.asSharedFlow()
 
-    override suspend fun emitLightSceneJsonMessage(message: String) {
+    override suspend fun emitSetLightMessage(message: BoonApiMessage) {
         _lightsMessageFlow.emit(message)
         Log.i(TAG, "attempting to emit $message")
 
+    }
+
+    override suspend fun emitAllOffMessage(message: BoonApiMessage) {
+        _lightsMessageFlow.emit(message)
     }
 }
 

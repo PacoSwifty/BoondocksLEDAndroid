@@ -108,7 +108,7 @@ class LightsViewModel @Inject constructor(
      */
     private fun emitJsonMessage(message: String) {
         viewModelScope.launch {
-            lightsRepository.emitLightSceneJsonMessage(message)
+//            lightsRepository.emitLightSceneJsonMessage(message)
         }
     }
 }

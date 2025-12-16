@@ -16,6 +16,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -25,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.boondocks_led.data.Constants.TAG
+import com.example.boondocks_led.ui.components.LightControlCard
 import com.example.boondocks_led.ui.theme.BoondocksTheme
 import com.github.skydoves.colorpicker.compose.HsvColorPicker
 import com.github.skydoves.colorpicker.compose.rememberColorPickerController
@@ -48,7 +50,11 @@ fun LEDControllerScreen(
 
     LEDScreenContent(
         controllerName = state.name,
-        onColorSelected = ledViewModel::onColorSelected
+        isLightOn = state.isLightOn,
+        brightness = state.brightnessSliderValue,
+        onColorSelected = ledViewModel::onColorSelected,
+        onSliderChanged = ledViewModel::onSliderChanged,
+        onToggleChanged = ledViewModel::onToggleChanged
     )
 
 }
@@ -57,9 +63,12 @@ fun LEDControllerScreen(
 fun LEDScreenContent(
     modifier: Modifier = Modifier,
     controllerName: String,
-    onColorSelected: (Int, Int, Int) -> Unit
+    isLightOn: Boolean,
+    brightness: Float,
+    onColorSelected: (Int, Int, Int) -> Unit,
+    onSliderChanged: (Float) -> Unit,
+    onToggleChanged: (Boolean) -> Unit
 ) {
-    Log.i(TAG, controllerName)
 
     val colorController = rememberColorPickerController()
     var configured by remember(colorController) { mutableStateOf(false) }
@@ -71,6 +80,14 @@ fun LEDScreenContent(
             colorController.setDebounceDuration(200L)
             configured = true
         }
+    }
+
+
+    var ignoreInitial by remember { mutableStateOf(true) }
+    LaunchedEffect(Unit) {
+        // Wait until first frame so initial setup emissions are ignored
+        withFrameNanos { }
+        ignoreInitial = false
     }
 
     Column(
@@ -94,6 +111,7 @@ fun LEDScreenContent(
                 .padding(10.dp),
             controller = colorController,
             onColorChanged = { colorEnvelope ->
+                if (ignoreInitial) return@HsvColorPicker
                 val color: Color = colorEnvelope.color
                 val red = (color.red * 255).toInt()
                 val green = (color.green * 255).toInt()
@@ -102,6 +120,17 @@ fun LEDScreenContent(
 
             }
         )
+
+        //todo what goes here? Channel name?
+        LightControlCard(
+            "Channel Name Placeholder",
+            isLightOn,
+            onToggleChange = onToggleChanged,
+            sliderValue = brightness,
+            onSliderChange = onSliderChanged,
+            modifier)
+
+
     }
 }
 
@@ -110,9 +139,13 @@ fun LEDScreenContent(
 fun LightContentPreview() {
     BoondocksTheme {
         LEDScreenContent(
-            modifier = Modifier,
             controllerName = "Controller 1",
-            onColorSelected = TODO()
+            onColorSelected = {r,g,b ->},
+            onSliderChanged = {},
+            onToggleChanged = {},
+            isLightOn = true,
+            brightness = 0.5f
+
         )
     }
 }
