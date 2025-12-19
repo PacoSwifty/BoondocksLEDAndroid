@@ -49,7 +49,8 @@ fun LEDControllerScreen(
         actions = LedActions(
             onColorSelected = ledViewModel::onColorSelected,
             onToggle = ledViewModel::onToggleChanged,
-            onBrightness = ledViewModel::onBrightnessChanged
+            onBrightness = ledViewModel::onBrightnessChanged,
+            onBrightnessChangeFinished = ledViewModel::onBrightnessFinished
         ),
         onAllOffClicked = ledViewModel::onAllOffClicked
     )
@@ -124,6 +125,7 @@ fun LEDScreenContent(
                 brightness = rgb.brightness,
                 onToggleChanged = { enabled -> actions.onToggle(LEDChannel.RGB, enabled) },
                 onBrightnessChanged = { v -> actions.onBrightness(LEDChannel.RGB, v) },
+                onBrightnessChangeFinished = { actions.onBrightnessChangeFinished(LEDChannel.RGB) },
                 onColorSelected = actions.onColorSelected
             )
         }
@@ -137,6 +139,7 @@ fun LEDScreenContent(
                     onToggleChange = { enabled -> actions.onToggle(ch.channel, enabled) },
                     sliderValue = ch.brightness,
                     onSliderChange = { v -> actions.onBrightness(ch.channel, v) },
+                    onSliderChangeFinished = { actions.onBrightnessChangeFinished(ch.channel) },
                     modifier = Modifier.padding(top = 18.dp)
                 )
             }

@@ -7,14 +7,10 @@ import com.example.boondocks_led.data.Constants.TAG
 import com.example.boondocks_led.data.ControllerType
 import com.example.boondocks_led.data.LEDController
 import com.example.boondocks_led.data.LEDControllerRepository
-import com.example.boondocks_led.data.RGB
-import com.example.boondocks_led.data.RGBW
-import com.example.boondocks_led.data.SingleChannelChange
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import kotlinx.serialization.json.Json
 import javax.inject.Inject
 
 @HiltViewModel
@@ -77,51 +73,25 @@ class LEDControllerViewModel @Inject constructor(
         }
     }
 
+    fun onBrightnessFinished(channel: LEDChannel) {
+        val c = controller ?: return
 
-    /**
-     * If coming from color picker, pass through those RGB values and set w to 0
-     */
-    fun buildRGBWMessage(r : Int, g : Int, b : Int) : String {
-        val cmd = mapOf(controller?.controllerId to RGBW(r, g, b, 0))
-        return Json.encodeToString(cmd)
+        when (channel) {
+            LEDChannel.RGB -> {
+                // build + send RGBW brightness message based on s.rgbwBrightness
+                c.commitBrightnessChange(LEDChannel.RGB)
+            }
+
+            LEDChannel.PLUS_ONE -> {
+                c.commitBrightnessChange(LEDChannel.PLUS_ONE)
+            }
+
+            LEDChannel.CH1 -> c.commitBrightnessChange(LEDChannel.CH1)
+            LEDChannel.CH2 -> c.commitBrightnessChange(LEDChannel.CH2)
+            LEDChannel.CH3 -> c.commitBrightnessChange(LEDChannel.CH3)
+            LEDChannel.CH4 -> c.commitBrightnessChange(LEDChannel.CH4)
+        }
     }
-
-
-    //todo get business logic clarification for white channel
-    /**
-     * If coming from ... ?
-     */
-    fun buildRGBWMessage(whiteOn : Boolean) : String {
-        val w = if(whiteOn) 255 else 0
-        val cmd = mapOf(controller?.controllerId to RGBW(0,0,0,w))
-        return Json.encodeToString(cmd)
-    }
-
-    fun buildRGBPlusMessage(r: Int, g: Int, b: Int) : String {
-        val cmd = mapOf(controller?.controllerId to RGB(r, g, b))
-        return Json.encodeToString(cmd)
-    }
-
-    fun buildRGBPlusMessage(whiteOn : Boolean) : String {
-        val w = if(whiteOn) 255 else 0
-        val cmd = mapOf(controller?.controllerId to SingleChannelChange("W" , w))
-        return Json.encodeToString(cmd)
-    }
-
-    fun build4ChanToggleMessage(channel: String, toggled: Boolean) : String {
-        val lightStatus = if(toggled) 255 else 0
-        val cmd = mapOf(controller?.controllerId to SingleChannelChange(channel, lightStatus))
-        return Json.encodeToString(cmd)
-    }
-
-
-
-
-
-
-
-
-
 }
 
 enum class LEDChannel { RGB, PLUS_ONE, CH1, CH2, CH3, CH4 }
@@ -129,11 +99,13 @@ enum class LEDChannel { RGB, PLUS_ONE, CH1, CH2, CH3, CH4 }
 data class LedActions(
     val onColorSelected: (Int, Int, Int) -> Unit,
     val onToggle: (channel: LEDChannel, enabled: Boolean) -> Unit,
-    val onBrightness: (channel: LEDChannel, value: Float) -> Unit
+    val onBrightness: (channel: LEDChannel, value: Float) -> Unit,
+    val onBrightnessChangeFinished: (channel: LEDChannel) -> Unit
 )
 
 val previewLedActions = LedActions(
     onColorSelected = {r,g,b -> Unit},
     onToggle = {channel, enabled -> Unit},
-    onBrightness = {channel, value -> Unit}
+    onBrightness = {channel, value -> Unit},
+    onBrightnessChangeFinished = {}
 )

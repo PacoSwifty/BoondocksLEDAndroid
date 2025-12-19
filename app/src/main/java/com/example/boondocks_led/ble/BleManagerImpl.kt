@@ -125,7 +125,7 @@ class BleManagerImpl @Inject constructor(
 
     override suspend fun send(characteristic: BoonLEDCharacteristic, bytes: ByteArray) {
         ensureReady()
-        Log.d(TAG, "Sending BLE Message: $bytes")
+        Log.d(TAG, "Sending BLE Message: ${bytes.decodeToString()}")
 
         writeQueue.send(WriteRequest(target = characteristic, payload = bytes))
     }

@@ -33,6 +33,7 @@ fun RGBPickerCard(
     brightness: Float,
     onToggleChanged: (Boolean) -> Unit,
     onBrightnessChanged: (Float) -> Unit,
+    onBrightnessChangeFinished: () -> Unit,
     onColorSelected: (Int, Int, Int) -> Unit
 ) {
     val colorController = rememberColorPickerController()
@@ -100,6 +101,7 @@ fun RGBPickerCard(
                 Slider(
                     value = brightness,
                     onValueChange = onBrightnessChanged,
+                    onValueChangeFinished = onBrightnessChangeFinished,
                     modifier = Modifier.fillMaxWidth() // Spans the full width of the Column
                 )
 
