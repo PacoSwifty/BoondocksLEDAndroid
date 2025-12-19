@@ -125,7 +125,19 @@ class BleManagerImpl @Inject constructor(
 
     override suspend fun send(characteristic: BoonLEDCharacteristic, bytes: ByteArray) {
         ensureReady()
+        Log.d(TAG, "Sending BLE Message: $bytes")
+
         writeQueue.send(WriteRequest(target = characteristic, payload = bytes))
+    }
+
+    override fun trySend(characteristic: BoonLEDCharacteristic, bytes: ByteArray): Boolean {
+        if (stopRequested.get()) return false
+
+        scope.launch {
+            runCatching { send(characteristic, bytes) }
+                .onFailure { Log.w(TAG, "trySend failed: ${it.message}", it) }
+        }
+        return true
     }
 
     // ---------- Core loops ----------

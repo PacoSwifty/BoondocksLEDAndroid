@@ -5,4 +5,6 @@
     <string name="scene2">Scene II</string>
     <string name="scene3">Scene III</string>
 
+    <string name="RGB">RGB</string>
+
 </resources>

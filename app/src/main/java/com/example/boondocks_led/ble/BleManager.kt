@@ -29,4 +29,10 @@ interface BleManager {
 
     /** Convenience: send UTF-8 text */
     suspend fun send(characteristic: BoonLEDCharacteristic, text: String) = send(characteristic, text.toByteArray(Charsets.UTF_8))
+
+    /** Fire-and-forget convenience */
+    fun trySend(characteristic: BoonLEDCharacteristic, bytes: ByteArray): Boolean
+
+    /** Convenience: just pass in a string */
+    fun trySend(characteristic: BoonLEDCharacteristic, text: String) = trySend(characteristic, text.toByteArray(Charsets.UTF_8))
 }

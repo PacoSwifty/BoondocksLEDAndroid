@@ -1,6 +1,7 @@
 package com.example.boondocks_led.data
 
 import android.util.Log
+import com.example.boondocks_led.ble.BleManager
 import com.example.boondocks_led.data.Constants.TAG
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -13,25 +14,26 @@ class LEDControllerRepository @Inject constructor(
 
     private val controllers = mutableMapOf<String, LEDController>()
 
-    fun get(controllerId: String): LEDController {
+    fun get(controllerId: String, type: ControllerType): LEDController {
         return controllers.getOrPut(controllerId) {
             Log.i(TAG, "Calling create from repository")
-            controllerFactory.create(controllerId)
+            controllerFactory.create(controllerId, type=type)
         }
     }
 }
 
 
-class LEDControllerFactory @Inject constructor() {
+class LEDControllerFactory @Inject constructor(
+    private val bleManager: BleManager
+) {
     fun create(
         controllerId: String,
         controllerName: String = "Controller $controllerId",
-        channels: List<String> = listOf("Ch1", "Ch2", "Ch3", "Ch4")
+        type: ControllerType,
     ): LEDController = LEDController(
         controllerId = controllerId,
-        controllerType = ControllerType.RGBW,
+        controllerType = type,
         controllerName = controllerName,
-        channels = channels,
-
+        ble = bleManager
     )
 }

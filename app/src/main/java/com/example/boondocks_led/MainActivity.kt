@@ -3,7 +3,6 @@ package com.example.boondocks_led
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Bundle
-import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -20,15 +19,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.core.app.ActivityCompat
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.example.boondocks_led.data.Constants.TAG
 import com.example.boondocks_led.ui.components.TabRow
 import com.example.boondocks_led.ui.navigation.BoondocksNavHost
 import com.example.boondocks_led.ui.navigation.Controller1
@@ -36,7 +31,6 @@ import com.example.boondocks_led.ui.navigation.navigateToController
 import com.example.boondocks_led.ui.navigation.tabRowScreens
 import com.example.boondocks_led.ui.theme.BoondocksTheme
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.launch
 
 
 
@@ -66,19 +60,7 @@ class MainActivity : ComponentActivity() {
         }
 
         requestBluetoothPermissions()
-        collectLightsMessage()
 
-    }
-
-    private fun collectLightsMessage() {
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                mainActivityViewModel.lightsMessageFlow.collect {
-                    Log.i(TAG, "received message from Lights Flow: $it")
-                    mainActivityViewModel.sendJson(it)
-                }
-            }
-        }
     }
 
     @Composable

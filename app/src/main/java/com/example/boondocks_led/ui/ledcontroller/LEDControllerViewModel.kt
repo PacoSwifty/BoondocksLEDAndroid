@@ -3,87 +3,137 @@ package com.example.boondocks_led.ui.ledcontroller
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.boondocks_led.ble.BoonLEDCharacteristic
-import com.example.boondocks_led.data.BoonApiMessage
 import com.example.boondocks_led.data.Constants.TAG
+import com.example.boondocks_led.data.ControllerType
 import com.example.boondocks_led.data.LEDController
 import com.example.boondocks_led.data.LEDControllerRepository
-import com.example.boondocks_led.data.LightsRepository
+import com.example.boondocks_led.data.RGB
+import com.example.boondocks_led.data.RGBW
+import com.example.boondocks_led.data.SingleChannelChange
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.Json
 import javax.inject.Inject
 
 @HiltViewModel
 class LEDControllerViewModel @Inject constructor(
     private val ledControllerRepository: LEDControllerRepository,
-    private val lightsRepository: LightsRepository
 ) : ViewModel() {
 
     private var controller: LEDController? = null
     private val _uiState = MutableStateFlow<LEDControllerState?>(null)
     val uiState : StateFlow<LEDControllerState?> = _uiState
 
-    fun init(controllerId: String) {
+    fun init(controllerId: String, type: ControllerType) {
         if (controller != null) return
         Log.i(TAG, "Calling get from the viewModel")
-        controller = ledControllerRepository.get(controllerId)
+        controller = ledControllerRepository.get(controllerId, type)
 
         viewModelScope.launch {
             controller!!.state.collect { _uiState.value = it }
         }
     }
 
+    fun onAllOffClicked() {
+        controller?.turnOffLights()
+    }
     fun onColorSelected(r: Int, g: Int, b: Int) {
         Log.i(TAG, "Selected color R:$r, G:$g, B:$b")
-//        val testBoardMessage = "{\"4\": {\"R\":$r, \"G\":$g, \"B\":$b, \"W\":0}}"
-//        val testBoardMessage = "{\"${controller?.controllerId}\": {\"R\":$r, \"G\":$g, \"B\":$b, \"W\":0}}"
-        val testBoardMessage = "{\"${controller?.controllerId}\": {\"R\":255, \"G\":0, \"B\":0, \"W\":0}}"
-
-
-        val apiMessage = BoonApiMessage(BoonLEDCharacteristic.LedSet, testBoardMessage)
-        viewModelScope.launch {
-            lightsRepository.emitSetLightMessage(apiMessage)
-        }
+        //todo verify that we can always set white to 0 when picking a color
+        controller?.setRGBColor(r,g,b,0)
 
     }
 
 
-    //todo consider updating these in the controller itself? see bottom placeholder methods
-    fun onSliderChanged(newPosition: Float) {
-        Log.i(TAG, "Slider Changed to: $newPosition")
-        viewModelScope.launch {
-            _uiState.update { currentState ->
-                currentState?.copy(brightnessSliderValue = newPosition)
-            }
+
+    fun onToggleChanged(channel: LEDChannel, enabled: Boolean) {
+        val c = controller ?: return
+
+        when (channel) {
+            LEDChannel.RGB      -> c.setRGBEnabled(enabled)
+            LEDChannel.PLUS_ONE -> c.setPlusOneEnabled(enabled)
+
+            LEDChannel.CH1 -> c.setChannelEnabled(index = 1, enabled = enabled)
+            LEDChannel.CH2 -> c.setChannelEnabled(index = 2, enabled = enabled)
+            LEDChannel.CH3 -> c.setChannelEnabled(index = 3, enabled = enabled)
+            LEDChannel.CH4 -> c.setChannelEnabled(index = 4, enabled = enabled)
         }
     }
 
-    fun onToggleChanged(toggled: Boolean) {
-        Log.i(TAG, "Toggle Changed to: $toggled")
-    //{'1':'off'}
-        val status = if(toggled) "on" else "off"
-        val json = "{1:\"${status}\"}"
-        val message = BoonApiMessage(BoonLEDCharacteristic.AllOff, json)
-        Log.i(TAG,"Emitting message: $json")
+    fun onBrightnessChanged(channel: LEDChannel, brightness: Float) {
+        val c = controller ?: return
+        val b = brightness.coerceIn(0f, 1f) // or 0..255 depending on your UI scale
 
-        viewModelScope.launch {
-            _uiState.update { currentState ->
-                currentState?.copy(isLightOn = toggled)
-            }
-            lightsRepository.emitAllOffMessage(message)
+        when (channel) {
+            LEDChannel.RGB      -> c.setRGBBrightness(b)
+            LEDChannel.PLUS_ONE -> c.setPlusOneBrightness(b)
+
+            LEDChannel.CH1 -> c.setChannelBrightness(index = 1, brightness = b)
+            LEDChannel.CH2 -> c.setChannelBrightness(index = 2, brightness = b)
+            LEDChannel.CH3 -> c.setChannelBrightness(index = 3, brightness = b)
+            LEDChannel.CH4 -> c.setChannelBrightness(index = 4, brightness = b)
         }
     }
 
 
-    fun setColor(r: Int, g: Int, b: Int, w: Int) {
-        controller?.setRgbw(r, g, b, w)
+    /**
+     * If coming from color picker, pass through those RGB values and set w to 0
+     */
+    fun buildRGBWMessage(r : Int, g : Int, b : Int) : String {
+        val cmd = mapOf(controller?.controllerId to RGBW(r, g, b, 0))
+        return Json.encodeToString(cmd)
     }
 
-    fun setBrightness(value: Int) {
-        controller?.setBrightness(value)
+
+    //todo get business logic clarification for white channel
+    /**
+     * If coming from ... ?
+     */
+    fun buildRGBWMessage(whiteOn : Boolean) : String {
+        val w = if(whiteOn) 255 else 0
+        val cmd = mapOf(controller?.controllerId to RGBW(0,0,0,w))
+        return Json.encodeToString(cmd)
     }
+
+    fun buildRGBPlusMessage(r: Int, g: Int, b: Int) : String {
+        val cmd = mapOf(controller?.controllerId to RGB(r, g, b))
+        return Json.encodeToString(cmd)
+    }
+
+    fun buildRGBPlusMessage(whiteOn : Boolean) : String {
+        val w = if(whiteOn) 255 else 0
+        val cmd = mapOf(controller?.controllerId to SingleChannelChange("W" , w))
+        return Json.encodeToString(cmd)
+    }
+
+    fun build4ChanToggleMessage(channel: String, toggled: Boolean) : String {
+        val lightStatus = if(toggled) 255 else 0
+        val cmd = mapOf(controller?.controllerId to SingleChannelChange(channel, lightStatus))
+        return Json.encodeToString(cmd)
+    }
+
+
+
+
+
+
+
+
+
 }
 
+enum class LEDChannel { RGB, PLUS_ONE, CH1, CH2, CH3, CH4 }
+
+data class LedActions(
+    val onColorSelected: (Int, Int, Int) -> Unit,
+    val onToggle: (channel: LEDChannel, enabled: Boolean) -> Unit,
+    val onBrightness: (channel: LEDChannel, value: Float) -> Unit
+)
+
+val previewLedActions = LedActions(
+    onColorSelected = {r,g,b -> Unit},
+    onToggle = {channel, enabled -> Unit},
+    onBrightness = {channel, value -> Unit}
+)
