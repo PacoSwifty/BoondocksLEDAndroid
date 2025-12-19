@@ -37,6 +37,7 @@ fun LightControlCard(
     onToggleChange: (Boolean) -> Unit,
     sliderValue: Float,
     onSliderChange: (Float) -> Unit,
+    onSliderChangeFinished: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -66,6 +67,7 @@ fun LightControlCard(
             Slider(
                 value = sliderValue,
                 onValueChange = onSliderChange,
+                onValueChangeFinished = onSliderChangeFinished,
                 modifier = Modifier.fillMaxWidth() // Spans the full width of the Column
             )
         }
@@ -88,6 +90,7 @@ fun LightControlCardPreview() {
         isChecked = isToggled,
         onToggleChange = { newState -> isToggled = newState },
         sliderValue = sliderPosition,
-        onSliderChange = { newPosition -> sliderPosition = newPosition }
+        onSliderChange = { newPosition -> sliderPosition = newPosition },
+        onSliderChangeFinished = {}
     )
 }
