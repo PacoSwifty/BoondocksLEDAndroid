@@ -7,6 +7,7 @@ import kotlinx.serialization.Serializable
  * Additionally, it will hold data classes to be serialized for transmission.
  */
 
+//region Set LED
 // ----- Set LED -----
 
 /** Type: RGBW -
@@ -25,7 +26,7 @@ import kotlinx.serialization.Serializable
 
 
 /**
- * Type: RGB+1 -
+ * Type: RGB+1 - Use this SetLED call to toggle the +1 channel on or off
  * Root Value is a number 1-4 corresponding to an LED Controller's ID
  * Here you will set the RGB and the +1 (W) in two separate calls, the RGB values for
  * the multicolor strip, and a value of either 0 or 255 in the W channel for the +1 strip
@@ -80,7 +81,9 @@ data class SingleChannelChange(
     val channel: String,
     val value: Int
 )
+//endregion
 
+//region Set Brightness
 // ----- Set Brightness -----
 //todo: Later we'll update this to be a float from 0 to 1.0f, for now we're using int values 0-3
 
@@ -90,14 +93,14 @@ data class SingleChannelChange(
  * For now these values will be 0-3, later we'll pass either float 0-1.0f or int 0-255
  *
  */
- //{
- //  4: {
- //    "R": 3,
- //    "G": 3,
- //    "B": 3,
- //    "W": 3
- //  }
- //}
+//{
+//  4: {
+//    "R": 3,
+//    "G": 3,
+//    "B": 3,
+//    "W": 3
+//  }
+//}
 
 
 /**
@@ -127,3 +130,53 @@ data class SingleChannelChange(
 //     }
 // }
 
+//endregion
+
+//region Set Type
+// ----- Set Type -----
+/**
+ * Type RGBW: Root is ControllerID, type is one RGBW, name is dynamic, should be a single channel name
+ *
+ */
+
+//{
+//    '1': {
+//    'Type': 'RGBW',
+//    'Name': 'Cabinet',
+//    'ChanNames': {
+//        'RGBW': 'Cabinet'
+//      }
+//    }
+//}
+
+/**
+ * Type RGB+1: Root is ControllerId, type is RGB+1, name is dynamic, channel names have RGB and W
+ */
+
+//{
+//    '2': {
+//    'Type': 'RGB+1',
+//    'Name': 'Cabinet',
+//    'ChanNames': {
+//        'RGB': 'CabLeft',
+//        'W': 'CabRight'
+//        }
+//    }
+//}
+
+/**
+ * Type 4Chan: Root is ControllerId, Type is 4Chan, name is dynamic, channels 1-4 are represented by R,G,B, and W, they have dynamic names
+ */
+
+//{
+//    '1': {
+//        'Type': '4Chan',
+//        'Name': 'Cabinets',
+//        'ChanNames': {
+//            'R': 'Cabinet1',
+//            'G': 'Cabinet2',
+//            'B': 'Cabinet3',
+//            'W': 'Cabinet4'
+//        }
+//    }
+//}

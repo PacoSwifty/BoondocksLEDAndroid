@@ -20,12 +20,13 @@ class LEDControllerViewModel @Inject constructor(
 
     private var controller: LEDController? = null
     private val _uiState = MutableStateFlow<LEDControllerState?>(null)
-    val uiState : StateFlow<LEDControllerState?> = _uiState
+    val uiState: StateFlow<LEDControllerState?> = _uiState
 
     fun init(controllerId: String, type: ControllerType) {
         if (controller != null) return
         Log.i(TAG, "Calling get from the viewModel")
         controller = ledControllerRepository.get(controllerId, type)
+        controller?.setIndividualControllerType(type)
 
         viewModelScope.launch {
             controller!!.state.collect { _uiState.value = it }
@@ -35,20 +36,19 @@ class LEDControllerViewModel @Inject constructor(
     fun onAllOffClicked() {
         controller?.turnOffLights()
     }
+
     fun onColorSelected(r: Int, g: Int, b: Int) {
         Log.i(TAG, "Selected color R:$r, G:$g, B:$b")
-        //todo verify that we can always set white to 0 when picking a color
-        controller?.setRGBColor(r,g,b,0)
+        controller?.setRGBColor(r, g, b, 0)
 
     }
-
 
 
     fun onToggleChanged(channel: LEDChannel, enabled: Boolean) {
         val c = controller ?: return
 
         when (channel) {
-            LEDChannel.RGB      -> c.setRGBEnabled(enabled)
+            LEDChannel.RGB -> c.setRGBEnabled(enabled)
             LEDChannel.PLUS_ONE -> c.setPlusOneEnabled(enabled)
 
             LEDChannel.CH1 -> c.setChannelEnabled(index = 1, enabled = enabled)
@@ -63,7 +63,7 @@ class LEDControllerViewModel @Inject constructor(
         val b = brightness.coerceIn(0f, 1f) // or 0..255 depending on your UI scale
 
         when (channel) {
-            LEDChannel.RGB      -> c.setRGBBrightness(b)
+            LEDChannel.RGB -> c.setRGBBrightness(b)
             LEDChannel.PLUS_ONE -> c.setPlusOneBrightness(b)
 
             LEDChannel.CH1 -> c.setChannelBrightness(index = 1, brightness = b)
@@ -104,8 +104,8 @@ data class LedActions(
 )
 
 val previewLedActions = LedActions(
-    onColorSelected = {r,g,b -> Unit},
-    onToggle = {channel, enabled -> Unit},
-    onBrightness = {channel, value -> Unit},
+    onColorSelected = { r, g, b -> Unit },
+    onToggle = { channel, enabled -> Unit },
+    onBrightness = { channel, value -> Unit },
     onBrightnessChangeFinished = {}
 )
