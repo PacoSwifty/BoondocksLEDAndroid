@@ -10,14 +10,18 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import javax.inject.Inject
 import kotlin.math.roundToInt
 
-
+@Serializable
 enum class ControllerType {
     RGBW,
+    @SerialName("RGB+1")
     RGBPLUS1,
+    @SerialName("4Chan")
     FOURCHANNEL
 }
 
@@ -60,11 +64,43 @@ class LEDController @Inject constructor(
         ble.trySend(BoonLEDCharacteristic.AllOff, buildAllOffMessage())
     }
 
+    fun setIndividualControllerType(type: ControllerType) {
+//        if (_state.value.type == type) return
+        Log.i(TAG,"In LEDController, attempting to set Controller Type!")
+
+        val name = "Controller $controllerId"
+
+        //todo later we should persist and fetch user-defined channel names. Hardcoding for now.
+        var channelNames = mutableMapOf<String, String>()
+
+        when (type) {
+            ControllerType.RGBW -> channelNames["RGBW"] = "User Channel 1"
+            ControllerType.RGBPLUS1 -> {
+                channelNames["RGB"] = "User Channel 1"
+                channelNames["W"] = "User Channel 2"
+
+            }
+            ControllerType.FOURCHANNEL -> {
+                channelNames["R"] = "User Channel 1"
+                channelNames["G"] = "User Channel 2"
+                channelNames["B"] = "User Channel 3"
+                channelNames["W"] = "User Channel 4"
+            }
+        }
+        _state.update { it.copy(type = type) }
+
+        val json = buildSetTypeMessage(type, controllerId, name, channelNames)
+        Log.i(TAG, "Setting individual controller type: \n $json")
+        ble.tryConfigureController(controllerId, json.encodeToByteArray())
+    }
+
     //region set brightnesses / toggles from viewmodel
     fun setRGBColor(r: Int, g: Int, b: Int, w: Int) {
         //todo maybe mutually exclusive logic here?
         _state.update { it.copy(r = r, g = g, b = b, w = w) }
-        ble.trySend(BoonLEDCharacteristic.LedSet, buildSetRGBWMessage(r, g, b))
+        val msg = buildSetRGBWMessage(r, g, b).encodeToByteArray()
+        // fire-and-forget but queued + gated internally
+        ble.trySendForController(controllerId, BoonLEDCharacteristic.LedSet, msg)
     }
 
     fun setRGBEnabled(enabled: Boolean) {
@@ -83,6 +119,7 @@ class LEDController @Inject constructor(
         when (channel) {
             LEDChannel.RGB -> {
                 // build + send RGBW brightness message based on s.rgbwBrightness
+                //todo if these are causing errors, update to use trysendforcontroller
                 ble.trySend(
                     BoonLEDCharacteristic.BrightSet,
                     text =
@@ -164,8 +201,13 @@ class LEDController @Inject constructor(
      * at https://github.com/tswift123/led_controller/blob/main/Json%20messages.txt
      */
     fun buildSetRGBWMessage(r: Int, g: Int, b: Int): String {
-        val cmd = mapOf(controllerId to RGBW(r, g, b, 0))
-        return Json.encodeToString(cmd)
+        if (controllerType == ControllerType.RGBW) {
+            val cmd = mapOf(controllerId to RGBW(r, g, b, 0))
+            return Json.encodeToString(cmd)
+        } else {
+            val cmd = mapOf(controllerId to RGB(r, g, b))
+            return Json.encodeToString(cmd)
+        }
     }
 
     //todo currently the pico supports brightness values of 0-3, update this later to pass float of 0.0f - 1.0f
@@ -192,7 +234,7 @@ class LEDController @Inject constructor(
     /** Here channel can be one of R, G, B, or W */
     fun buildSetPlusOneBrightnessMessage(channel: String, brightness: Float): String {
         val hardStepBrightness = (brightness * 3).roundToInt()
-        val cmd = mapOf(controllerId to SingleChannelChange("W", hardStepBrightness))
+        val cmd = mapOf(controllerId to SingleChannelChange(channel, hardStepBrightness))
         return Json.encodeToString(cmd)
     }
 
@@ -200,6 +242,32 @@ class LEDController @Inject constructor(
         val cmd = mapOf(1 to "off")
         return Json.encodeToString(cmd)
     }
+
+    fun buildControllerTypeHolder(
+        type: ControllerType,
+        controllerId: String,
+        name: String,
+        channelNames: Map<String,String>
+    ) :Map<String, ControllerTypeHolder> {
+        return mapOf(
+            controllerId to ControllerTypeHolder(
+                Type = type,
+                Name = name,
+                ChanNames = channelNames
+            )
+        )
+    }
+    fun buildSetTypeMessage(type: ControllerType, controllerId: String, name: String, channelNames: Map<String, String>): String {
+        val controllerTypeHolder = buildControllerTypeHolder(type, controllerId, name, channelNames)
+        return Json.encodeToString(controllerTypeHolder)
+    }
+
+    @Serializable
+    data class ControllerTypeHolder(
+        val Type: ControllerType,
+        val Name: String,
+        val ChanNames: Map<String,String>
+    )
 
     //endregion
 }

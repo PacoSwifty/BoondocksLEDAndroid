@@ -9,6 +9,8 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
@@ -37,7 +39,8 @@ enum class BoonLEDCharacteristic(val uuid: UUID) {
 data class WriteRequest(
     val target: BoonLEDCharacteristic,
     val payload: ByteArray,
-    val writeType: Int = BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
+    val writeType: Int = BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT,
+    val controllerId: String? = null
 )
 
 @Singleton
@@ -55,6 +58,12 @@ class BleManagerImpl @Inject constructor(
     )
     override val incoming: SharedFlow<ByteArray> = _incoming.asSharedFlow()
 
+    @Volatile
+    private var inflightRequest: WriteRequest? = null
+    private val configuredControllers = MutableStateFlow<Set<String>>(emptySet())
+    private val pendingCtrlType = mutableMapOf<String, ByteArray>()
+    private val pendingMutex = Mutex()
+
 
     // ---------- Android BLE objects ----------
     private val bluetoothManager: BluetoothManager by lazy {
@@ -71,6 +80,7 @@ class BleManagerImpl @Inject constructor(
     @Volatile
     private var characteristicMap: Map<BoonLEDCharacteristic, BluetoothGattCharacteristic> =
         emptyMap()
+
     @Volatile
     private var connectedDevice: BluetoothDevice? = null
 
@@ -84,8 +94,8 @@ class BleManagerImpl @Inject constructor(
 
     // Write queue: serialize writes and wait for onCharacteristicWrite
     private val writeQueue = Channel<WriteRequest>(capacity = Channel.BUFFERED)
-    private val writeAck = Channel<Boolean>(capacity = Channel.RENDEZVOUS)
 
+    private val writeAck = Channel<Pair<WriteRequest, Boolean>>(capacity = Channel.RENDEZVOUS)
 
     // ---------- Config ----------
     private val targetName = "BoonLED"
@@ -125,17 +135,49 @@ class BleManagerImpl @Inject constructor(
 
     override suspend fun send(characteristic: BoonLEDCharacteristic, bytes: ByteArray) {
         ensureReady()
-        Log.d(TAG, "Sending BLE Message: ${bytes.decodeToString()}")
+        Log.i(TAG, "Sending BLE Message: ${bytes.decodeToString()}")
 
         writeQueue.send(WriteRequest(target = characteristic, payload = bytes))
     }
 
     override fun trySend(characteristic: BoonLEDCharacteristic, bytes: ByteArray): Boolean {
         if (stopRequested.get()) return false
+        Log.i(TAG, "trySend: ${characteristic} with ${bytes.decodeToString()}")
 
         scope.launch {
             runCatching { send(characteristic, bytes) }
                 .onFailure { Log.w(TAG, "trySend failed: ${it.message}", it) }
+        }
+        return true
+    }
+
+    override suspend fun sendForController(
+        controllerId: String,
+        characteristic: BoonLEDCharacteristic,
+        bytes: ByteArray
+    ) {
+        ensureReady()
+        ensureConfigured(controllerId)
+
+        writeQueue.send(
+            WriteRequest(
+                target = characteristic,
+                payload = bytes,
+                controllerId = controllerId
+            )
+        )
+    }
+
+    override fun trySendForController(
+        controllerId: String,
+        characteristic: BoonLEDCharacteristic,
+        bytes: ByteArray
+    ): Boolean {
+        if (stopRequested.get()) return false
+
+        scope.launch {
+            runCatching { sendForController(controllerId, characteristic, bytes) }
+                .onFailure { Log.w(TAG, "trySendForController failed: ${it.message}") }
         }
         return true
     }
@@ -185,6 +227,9 @@ class BleManagerImpl @Inject constructor(
     private suspend fun writeLoop() {
         for (payload in writeQueue) {
             if (stopRequested.get()) return
+
+            inflightRequest = payload
+            Log.i(TAG, "WriteLoop: Just got inflight request: ${payload.target} with ${payload.payload.decodeToString()}")
             try {
                 ensureReady()
                 val g = gatt ?: continue
@@ -193,29 +238,34 @@ class BleManagerImpl @Inject constructor(
                     Log.w(TAG, "Characteristic ${payload.target} not available; dropping write")
                     continue
                 }
-//                val c = writeCharacteristic ?: continue
 
                 val ok = writeCharacteristicInternal(g, c, payload.payload, payload.writeType)
                 if (!ok) {
-                    // if write call returned false immediately, treat as failure and reconnect
                     Log.w(TAG, "writeCharacteristic returned false; forcing disconnect")
                     disconnectInternal("writeCharacteristic returned false")
                     continue
                 }
 
-                // Wait for ack from callback
-                val ackOk = withTimeoutOrNull(5_000) { writeAck.receive() } ?: false
+                val ackOk = withTimeoutOrNull(5_000) {
+                    val (ackedReq, success) = writeAck.receive()
+                    if (ackedReq !== payload) Log.w(TAG, "Ack did not match request instance")
+                    success
+                } ?: false
+
                 if (!ackOk) {
                     Log.w(TAG, "write ack timeout/failure; forcing disconnect")
                     disconnectInternal("write ack timeout/failure")
+                } else {
+                    onWriteSucceeded(payload)
                 }
             } catch (t: Throwable) {
                 Log.e(TAG, "writeLoop error", t)
                 disconnectInternal("writeLoop exception: ${t.message}")
+            } finally {
+                inflightRequest = null
             }
         }
     }
-
 
     // ---------- Scanning ----------
     @SuppressLint("MissingPermission")
@@ -295,6 +345,7 @@ class BleManagerImpl @Inject constructor(
         try {
 
             characteristicMap = emptyMap()
+            configuredControllers.value = emptySet()
             connectedDevice = null
             if (!ready.isCompleted) {
                 // cancel waiting senders
@@ -368,6 +419,15 @@ class BleManagerImpl @Inject constructor(
             characteristicMap = map
 
             if (!ready.isCompleted) ready.complete(Unit)
+            scope.launch {
+                ensureReady()
+                val snapshot = pendingMutex.withLock { pendingCtrlType.toMap() }
+                for ((id, bytes) in snapshot) {
+                    Log.i(TAG, "Replaying CtrlTypeSet for ${snapshot.size} controllers")
+                    configureController(id, bytes)
+                    // plus your “configured gate” marking on write success if you implemented it
+                }
+            }
         }
 
         override fun onMtuChanged(g: BluetoothGatt, mtu: Int, status: Int) {
@@ -379,10 +439,13 @@ class BleManagerImpl @Inject constructor(
             characteristic: BluetoothGattCharacteristic,
             status: Int
         ) {
-            val ok = status == BluetoothGatt.GATT_SUCCESS
-            if (!writeAck.trySend(ok).isSuccess) {
-                // If nobody is waiting, ignore.
+            val req = inflightRequest
+            if (req == null) {
+                Log.w(TAG, "onCharacteristicWrite but inflightRequest was null; status=$status")
+                return
             }
+            val ok = status == BluetoothGatt.GATT_SUCCESS
+            writeAck.trySend(req to ok)
         }
 
         // Optional reads/notifications -> incoming flow
@@ -420,10 +483,21 @@ class BleManagerImpl @Inject constructor(
     }
 
     private suspend fun ensureReady() {
-        if (stopRequested.get()) throw CancellationException("BLE stopped")
-        if (isReady()) return
-        // Await readiness (or throw if disconnected)
-        ready.await()
+        Log.i(TAG, "Ensure Ready")
+        while (true) {
+            if (stopRequested.get()) throw CancellationException("BLE stopped")
+            if (isReady()) return
+
+            try {
+                ready.await()
+            } catch (e: CancellationException) {
+                // disconnected while waiting -> loop and await the next readyField
+                continue
+            } catch (t: Throwable) {
+                // also loop on other transient failures
+                continue
+            }
+        }
     }
 
     @SuppressLint("MissingPermission")
@@ -448,5 +522,68 @@ class BleManagerImpl @Inject constructor(
 
     private fun resetReady() {
         readyField = CompletableDeferred()
+    }
+
+    override suspend fun configureController(controllerId: String, payload: ByteArray) {
+        Log.i(TAG, "Got to configureController with Controller $controllerId, payload was ${payload.decodeToString()}")
+        pendingMutex.withLock { pendingCtrlType[controllerId] = payload }
+        writeQueue.send(
+            WriteRequest(
+                target = BoonLEDCharacteristic.CtrlTypeSet,
+                payload = payload,
+                controllerId = controllerId
+            )
+        )
+    }
+
+    private suspend fun ensureConfigured(controllerId: String) {
+        while (true) {
+            if (configuredControllers.value.contains(controllerId)) return
+
+            // if not configured, resend latest CtrlTypeSet (best-effort)
+            val bytes = getPendingPayload(controllerId)
+
+            writeQueue.send(
+                WriteRequest(
+                    target = BoonLEDCharacteristic.CtrlTypeSet,
+                    payload = bytes,
+                    controllerId = controllerId
+                )
+            )
+
+            configuredControllers.filter { it.contains(controllerId) }.first()
+            return
+        }
+    }
+
+    private suspend fun getPendingPayload(controllerId: String): ByteArray {
+        val timeoutMs = 3_000L
+        val start = System.currentTimeMillis()
+
+        while (true) {
+            pendingMutex.withLock {
+                pendingCtrlType[controllerId]?.let { return it }
+            }
+            if (System.currentTimeMillis() - start > timeoutMs) {
+                throw IllegalStateException("No CtrlTypeSet payload registered for controllerId=$controllerId")
+            }
+            delay(50)
+        }
+    }
+
+    private fun onWriteSucceeded(req: WriteRequest) {
+        if (req.target == BoonLEDCharacteristic.CtrlTypeSet) {
+            val id = req.controllerId ?: return
+            configuredControllers.update { it + id }
+        }
+    }
+
+    override fun tryConfigureController(controllerId: String, payload: ByteArray): Boolean {
+        if (stopRequested.get()) return false
+        scope.launch {
+            runCatching { configureController(controllerId, payload) }
+                .onFailure { Log.w(TAG, "tryConfigureController failed: ${it.message}", it) }
+        }
+        return true
     }
 }
