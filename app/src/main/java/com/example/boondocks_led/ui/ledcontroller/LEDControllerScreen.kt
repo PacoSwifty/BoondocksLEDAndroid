@@ -122,7 +122,7 @@ fun LEDScreenContent(
                 modifier = Modifier,
                 title = rgb.label,
                 isOn = rgb.isOn,
-                brightness = rgb.brightness,
+                brightness = (rgb.brightness/100f), // brightness is only from 0f-1f within the slider, as soon as it leaves that widget we convert to int 0-100
                 onToggleChanged = { enabled -> actions.onToggle(LEDChannel.RGB, enabled) },
                 onBrightnessChanged = { v -> actions.onBrightness(LEDChannel.RGB, v) },
                 onBrightnessChangeFinished = { actions.onBrightnessChangeFinished(LEDChannel.RGB) },
@@ -137,7 +137,7 @@ fun LEDScreenContent(
                     ch.label,
                     ch.isOn,
                     onToggleChange = { enabled -> actions.onToggle(ch.channel, enabled) },
-                    sliderValue = ch.brightness,
+                    sliderValue = (ch.brightness/100f), // brightness is only from 0f-1f within the slider, as soon as it leaves that widget we convert to int 0-100
                     onSliderChange = { v -> actions.onBrightness(ch.channel, v) },
                     onSliderChangeFinished = { actions.onBrightnessChangeFinished(ch.channel) },
                     modifier = Modifier.padding(top = 18.dp)
@@ -178,5 +178,5 @@ data class ChannelUi(
     val channel: LEDChannel,
     val label: String,
     val isOn: Boolean,
-    val brightness: Float
+    val brightness: Int
 )

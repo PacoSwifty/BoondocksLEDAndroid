@@ -100,6 +100,7 @@ fun RGBPickerCard(
                 // The slider underneath the top row
                 Slider(
                     value = brightness,
+                    enabled = isOn,
                     onValueChange = onBrightnessChanged,
                     onValueChangeFinished = onBrightnessChangeFinished,
                     modifier = Modifier.fillMaxWidth() // Spans the full width of the Column

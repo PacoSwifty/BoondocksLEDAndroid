@@ -58,9 +58,15 @@ class LEDControllerViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Any time a user adjusts a slider on any channel we update the state internally. When a user
+     * lifts their finger we call the below method onBrightnessFinished()
+     */
     fun onBrightnessChanged(channel: LEDChannel, brightness: Float) {
         val c = controller ?: return
-        val b = brightness.coerceIn(0f, 1f) // or 0..255 depending on your UI scale
+        // brightness is only from 0f-1f within the slider, as soon as it leaves that widget (here) we convert to int 0-100
+        // and persist it as an int within our state.
+        val b = (brightness*100).toInt().coerceIn(0,100)
 
         when (channel) {
             LEDChannel.RGB -> c.setRGBBrightness(b)
@@ -73,6 +79,11 @@ class LEDControllerViewModel @Inject constructor(
         }
     }
 
+    /**
+     * This method gets called when the user removes their finger from the slider, at which
+     * point we'll commit the value by sending a message to the pico. This is to prevent
+     * flooding the communication channel with messages as the user drags the slider.
+     */
     fun onBrightnessFinished(channel: LEDChannel) {
         val c = controller ?: return
 

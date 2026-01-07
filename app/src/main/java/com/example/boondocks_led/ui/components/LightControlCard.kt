@@ -66,6 +66,7 @@ fun LightControlCard(
             // The slider underneath the top row
             Slider(
                 value = sliderValue,
+                enabled = isChecked,
                 onValueChange = onSliderChange,
                 onValueChangeFinished = onSliderChangeFinished,
                 modifier = Modifier.fillMaxWidth() // Spans the full width of the Column
