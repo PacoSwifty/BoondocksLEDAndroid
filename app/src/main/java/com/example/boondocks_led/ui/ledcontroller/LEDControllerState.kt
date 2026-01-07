@@ -16,14 +16,13 @@ data class LEDControllerState(
     val isFourChanTwoOn: Boolean,
     val isFourChanThreeOn: Boolean,
     val isFourChanFourOn: Boolean,
-    val rgbwBrightness: Float,
-    val plusOneBrightness: Float,
-    val fourChanOneBrightness: Float,
-    val fourChanTwoBrightness: Float,
-    val fourChanThreeBrightness: Float,
-    val fourChanFourBrightness: Float
+    val rgbwBrightness: Int,
+    val plusOneBrightness: Int,
+    val fourChanOneBrightness: Int,
+    val fourChanTwoBrightness: Int,
+    val fourChanThreeBrightness: Int,
+    val fourChanFourBrightness: Int
 
-    //    val brightness: Int = 255,
 
     //Considerations
     // might have an array of channels rather than hardcoded rgb?
@@ -45,10 +44,10 @@ public val previewState = LEDControllerState(
     isFourChanTwoOn = false,
     isFourChanThreeOn = false,
     isFourChanFourOn = false,
-    rgbwBrightness = 0.6f,
-    plusOneBrightness = 0f,
-    fourChanOneBrightness = 0f,
-    fourChanTwoBrightness = 0f,
-    fourChanThreeBrightness = 0f,
-    fourChanFourBrightness = 0f
+    rgbwBrightness = 60,
+    plusOneBrightness = 0,
+    fourChanOneBrightness = 0,
+    fourChanTwoBrightness = 0,
+    fourChanThreeBrightness = 0,
+    fourChanFourBrightness = 0
 )
