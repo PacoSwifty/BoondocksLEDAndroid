@@ -110,17 +110,33 @@ class BleManagerImpl @Inject constructor(
 
 
     // ---------- Public API ----------
+    private var writeLoopJob: Job? = null
+    private var connectLoopJob: Job? = null
+
     override suspend fun start() {
-        if (!started.compareAndSet(false, true)) return
+        // Reset stop flag
         stopRequested.set(false)
 
-        scope.launch { writeLoop() }
-        scope.launch { connectLoop() }
+        // Only launch loops if they're not already running
+        if (writeLoopJob?.isActive != true) {
+            writeLoopJob = scope.launch { writeLoop() }
+        }
+        if (connectLoopJob?.isActive != true) {
+            connectLoopJob = scope.launch { connectLoop() }
+        }
+
+        started.set(true)
     }
 
     override suspend fun stop() {
         stopRequested.set(true)
         started.set(false)
+
+        // Cancel the loop jobs
+        writeLoopJob?.cancel()
+        connectLoopJob?.cancel()
+        writeLoopJob = null
+        connectLoopJob = null
 
         // Stop scan + disconnect
         withContext(Dispatchers.IO) {

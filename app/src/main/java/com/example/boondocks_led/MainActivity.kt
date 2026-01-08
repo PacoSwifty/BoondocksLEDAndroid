@@ -11,26 +11,29 @@ import androidx.activity.viewModels
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.core.app.ActivityCompat
-import androidx.navigation.NavBackStackEntry
-import androidx.navigation.NavDestination
-import androidx.navigation.NavHostController
-import androidx.navigation.compose.currentBackStackEntryAsState
-import androidx.navigation.compose.rememberNavController
+import com.example.boondocks_led.ble.ConnectionState
+import com.example.boondocks_led.data.ControllerType
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.boondocks_led.ui.components.TabRow
-import com.example.boondocks_led.ui.navigation.BoondocksNavHost
-import com.example.boondocks_led.ui.navigation.Controller1
-import com.example.boondocks_led.ui.navigation.navigateToController
+import com.example.boondocks_led.ui.ledcontroller.LEDControllerScreen
 import com.example.boondocks_led.ui.navigation.tabRowScreens
+import com.example.boondocks_led.ui.splash.SplashScreen
 import com.example.boondocks_led.ui.theme.BoondocksTheme
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
 
 
 
@@ -65,45 +68,59 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     fun BoondocksApp() {
-        val navController = rememberNavController()
-        val currentBackStack by navController.currentBackStackEntryAsState()
-        val currentDestination = currentBackStack?.destination
+        val connectionState by mainActivityViewModel.connectionState.collectAsState()
 
-        AppScreenContent(navController, currentBackStack, currentDestination)
+        BoondocksTheme {
+            when (connectionState) {
+                is ConnectionState.Connected -> MainContent()
+                else -> SplashScreen()
+            }
+        }
     }
 
     @Composable
-    fun AppScreenContent(
-        navController: NavHostController,
-        currentBackStack: NavBackStackEntry?,
-        currentDestination: NavDestination?
-    ) {
-        BoondocksTheme {
+    fun MainContent() {
+        val pagerState = rememberPagerState(pageCount = { tabRowScreens.size })
+        val coroutineScope = rememberCoroutineScope()
 
-            val currentScreen =
-                tabRowScreens.find { it.route == currentDestination?.route } ?: Controller1
-            Scaffold(
-                topBar = {
-                    Column() {
-                        Box(
-                            modifier = Modifier
-                                .statusBarsPadding()
-                                .background(Color.Yellow)
-                        )
-                        TabRow(
-                            allScreens = tabRowScreens,
-                            onTabSelected = { newScreen ->
-                                navController.navigateToController(newScreen.route)
-                            },
-                            currentScreen = currentScreen,
-                        )
-                    }
+        Scaffold(
+            topBar = {
+                Column {
+                    Box(
+                        modifier = Modifier
+                            .statusBarsPadding()
+                            .background(Color.Yellow)
+                    )
+                    TabRow(
+                        allScreens = tabRowScreens,
+                        onTabSelected = { index ->
+                            coroutineScope.launch {
+                                pagerState.animateScrollToPage(index)
+                            }
+                        },
+                        selectedTabIndex = pagerState.currentPage,
+                    )
                 }
+            }
+        ) { innerPadding ->
+            val controllerConfigs = listOf(
+                "1" to ControllerType.RGBW,
+                "2" to ControllerType.RGBPLUS1,
+                "3" to ControllerType.FOURCHANNEL,
+                "4" to ControllerType.RGBW
+            )
 
-            ) { innerPadding ->
-                BoondocksNavHost(
-                    navController = navController,
-                    modifier = Modifier.padding(innerPadding)
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier
+                    .padding(innerPadding)
+                    .fillMaxSize()
+            ) { page ->
+                val (controllerId, controllerType) = controllerConfigs[page]
+                LEDControllerScreen(
+                    controllerId = controllerId,
+                    type = controllerType,
+                    ledViewModel = hiltViewModel(key = "controller_$controllerId")
                 )
             }
         }

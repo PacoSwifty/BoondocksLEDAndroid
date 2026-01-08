@@ -43,8 +43,8 @@ private const val TabFadeOutAnimationDuration = 100
 @Composable
 fun TabRow(
     allScreens: List<BoondocksDestination>,
-    onTabSelected: (BoondocksDestination) -> Unit,
-    currentScreen: BoondocksDestination
+    onTabSelected: (Int) -> Unit,
+    selectedTabIndex: Int
 ) {
     Surface(
         Modifier
@@ -52,12 +52,12 @@ fun TabRow(
             .fillMaxWidth()
     ) {
         Row(Modifier.selectableGroup()) {
-            allScreens.forEach { screen ->
+            allScreens.forEachIndexed { index, screen ->
                 BoondocksTab(
                     text = screen.route,
                     icon = screen.icon,
-                    onSelected = { onTabSelected(screen) },
-                    selected = currentScreen == screen
+                    onSelected = { onTabSelected(index) },
+                    selected = selectedTabIndex == index
                 )
             }
         }
