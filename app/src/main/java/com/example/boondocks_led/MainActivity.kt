@@ -30,6 +30,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.boondocks_led.ui.components.TabRow
 import com.example.boondocks_led.ui.ledcontroller.LEDControllerScreen
 import com.example.boondocks_led.ui.navigation.tabRowScreens
+import com.example.boondocks_led.ui.scene.SceneScreen
 import com.example.boondocks_led.ui.splash.SplashScreen
 import com.example.boondocks_led.ui.theme.BoondocksTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -114,14 +115,21 @@ class MainActivity : ComponentActivity() {
                 state = pagerState,
                 modifier = Modifier
                     .padding(innerPadding)
-                    .fillMaxSize()
+                    .fillMaxSize(),
+                userScrollEnabled = false
             ) { page ->
-                val (controllerId, controllerType) = controllerConfigs[page]
-                LEDControllerScreen(
-                    controllerId = controllerId,
-                    type = controllerType,
-                    ledViewModel = hiltViewModel(key = "controller_$controllerId")
-                )
+                when (page) {
+                    0 -> SceneScreen()
+                    else -> {
+                        val controllerIndex = page - 1
+                        val (controllerId, controllerType) = controllerConfigs[controllerIndex]
+                        LEDControllerScreen(
+                            controllerId = controllerId,
+                            type = controllerType,
+                            ledViewModel = hiltViewModel(key = "controller_$controllerId")
+                        )
+                    }
+                }
             }
         }
     }
