@@ -10,6 +10,11 @@ interface  BoondocksDestination {
 
 const val controllerRouteIds = "controller/{controllerId}"
 
+object SceneDestination: BoondocksDestination {
+    override val icon = R.drawable.baseline_movie_24
+    override val route = "Scenes"
+}
+
 object Controller1: BoondocksDestination {
     override val icon = R.drawable.baseline_lightbulb_24
     override val route = "Controller 1"
@@ -30,4 +35,4 @@ object Controller4: BoondocksDestination {
     override val route = "Controller 4"
 }
 
-val tabRowScreens = listOf(Controller1, Controller2, Controller3, Controller4)
+val tabRowScreens = listOf(SceneDestination, Controller1, Controller2, Controller3, Controller4)
