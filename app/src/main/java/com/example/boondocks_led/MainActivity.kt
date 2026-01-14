@@ -30,7 +30,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.boondocks_led.ui.components.TabRow
 import com.example.boondocks_led.ui.ledcontroller.LEDControllerScreen
 import com.example.boondocks_led.ui.navigation.tabRowScreens
-import com.example.boondocks_led.ui.scene.SceneScreen
+import com.example.boondocks_led.ui.scene.ScenePage
 import com.example.boondocks_led.ui.splash.SplashScreen
 import com.example.boondocks_led.ui.theme.BoondocksTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -119,7 +119,7 @@ class MainActivity : ComponentActivity() {
                 userScrollEnabled = false
             ) { page ->
                 when (page) {
-                    0 -> SceneScreen()
+                    0 -> ScenePage()
                     else -> {
                         val controllerIndex = page - 1
                         val (controllerId, controllerType) = controllerConfigs[controllerIndex]

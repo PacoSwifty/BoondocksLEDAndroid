@@ -180,3 +180,22 @@ data class SingleChannelChange(
 //        }
 //    }
 //}
+
+// endregion
+
+//region Scene Configuration
+
+//Scene Selection:
+//{keyword: value}
+//Where keyword is "LEDScene"
+//Value is a number of 1 through 4
+//e.g. {"LEDScene": "1"}
+
+
+//Scene Save Configuration:
+//{scene#: name}
+//Where scene# is a number from 1 to 4 corresponding to the four scenes that can be saved.
+//name is the custom name the user entered.  Maximum of 10 characters.  When this is
+//invoked, how the LEDs are set on the 4 controllers is saved to a file.
+//e.g. {'1': 'ABigName10'}}
+//endregion

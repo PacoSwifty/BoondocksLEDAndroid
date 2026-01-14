@@ -25,8 +25,9 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 
 @Composable
-fun SceneScreen(
-    viewModel: SceneViewModel = hiltViewModel()
+fun SceneSelectionScreen(
+    viewModel: SceneViewModel = hiltViewModel(),
+    onSettingsTapped: () -> Unit
 ) {
     val state by viewModel.state.collectAsState()
 
@@ -54,7 +55,7 @@ fun SceneScreen(
         Spacer(modifier = Modifier.height(24.dp))
 
         IconButton(
-            onClick = { viewModel.onSettingsTapped() },
+            onClick = onSettingsTapped,
             modifier = Modifier.size(48.dp)
         ) {
             Icon(
