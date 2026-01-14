@@ -225,16 +225,21 @@ class BleManagerImpl @Inject constructor(
                 connectGattInternal(device)
 
                 // Wait until services discovered + write characteristic cached
+                Log.i(TAG, "connectLoop: Waiting for ensureReady...")
                 ensureReady()
+                Log.i(TAG, "connectLoop: ensureReady returned successfully")
                 attempt = 0
+                Log.i(TAG, "connectLoop: Setting state to Connected for ${device.name} / ${device.address}")
                 _connectionState.value = ConnectionState.Connected(device.name, device.address)
+                Log.i(TAG, "connectLoop: State is now Connected")
 
                 // Stay here until disconnected
                 while (!stopRequested.get() && isReady()) {
                     delay(500)
                 }
             } catch (t: Throwable) {
-                _connectionState.value = ConnectionState.Error("connectLoop error", t)
+                Log.e(TAG, "connectLoop caught exception: ${t.message}", t)
+                _connectionState.value = ConnectionState.Error("connectLoop error: ${t.message}", t)
                 reconnectDelay(attempt++)
             }
         }
@@ -337,22 +342,32 @@ class BleManagerImpl @Inject constructor(
     }
 
     // ---------- GATT connect/disconnect ----------
+
+    /** Clean up prior GATT connection without changing connection state */
+    @SuppressLint("MissingPermission")
+    private fun cleanupPriorGatt() {
+        characteristicMap = emptyMap()
+        configuredControllers.value = emptySet()
+        connectedDevice = null
+        if (!ready.isCompleted) {
+            ready.completeExceptionally(CancellationException("Cleanup for new connection"))
+        }
+        gatt?.let {
+            try { it.disconnect() } catch (_: Throwable) { }
+            try { it.close() } catch (_: Throwable) { }
+        }
+        gatt = null
+        resetReady()
+    }
+
     @SuppressLint("MissingPermission")
     private fun connectGattInternal(device: BluetoothDevice) {
-        disconnectInternal("connectGattInternal: closing prior gatt")
+        // Clean up prior connection without changing state (we're about to connect)
+        cleanupPriorGatt()
         connectedDevice = device
 
-        // Reset readiness
-        if (ready.isCompleted) {
-            // ready is a CompletableDeferred<Unit>; recreate if already completed
-            // easiest: replace with a new instance (hack: reflection not needed; we keep it mutable via field)
-        }
-        // Instead of replacing field, we use a helper:
-        resetReady()
-
         val callback = gattCallback
-        gatt =
-            device.connectGatt(appContext, false, callback, BluetoothDevice.TRANSPORT_LE)
+        gatt = device.connectGatt(appContext, false, callback, BluetoothDevice.TRANSPORT_LE)
     }
 
     @SuppressLint("MissingPermission")
@@ -423,16 +438,23 @@ class BleManagerImpl @Inject constructor(
             val map = mutableMapOf<BoonLEDCharacteristic, BluetoothGattCharacteristic>()
             for (target in BoonLEDCharacteristic.entries) {
                 val ch = service.getCharacteristic(target.uuid)
-                if (ch != null) map[target] = ch
+                if (ch != null) {
+                    map[target] = ch
+                    Log.i(TAG, "Found characteristic: ${target.name}")
+                } else {
+                    Log.w(TAG, "Characteristic NOT found: ${target.name}")
+                }
             }
 
             // Decide readiness: require at least the ones you need for the app to function
-            if (!map.containsKey(BoonLEDCharacteristic.LedSet)) {
-                disconnectInternal("LedSet characteristic not found")
+            val missingRequired = requiredChars.filter { !map.containsKey(it) }
+            if (missingRequired.isNotEmpty()) {
+                disconnectInternal("Missing required characteristics: ${missingRequired.map { it.name }}")
                 return
             }
 
             characteristicMap = map
+            Log.i(TAG, "All required characteristics found, marking ready")
 
             if (!ready.isCompleted) ready.complete(Unit)
             scope.launch {
@@ -500,17 +522,40 @@ class BleManagerImpl @Inject constructor(
 
     private suspend fun ensureReady() {
         Log.i(TAG, "Ensure Ready")
+        val startTime = System.currentTimeMillis()
+        val timeoutMs = 10_000L // 10 second timeout for connection to complete
+
         while (true) {
             if (stopRequested.get()) throw CancellationException("BLE stopped")
             if (isReady()) return
 
+            // Check if we've been disconnected or hit an error - if so, throw to trigger retry
+            when (val state = _connectionState.value) {
+                is ConnectionState.Disconnected -> {
+                    throw IllegalStateException("Connection failed: ${state.reason}")
+                }
+                is ConnectionState.Error -> {
+                    throw IllegalStateException("Connection error: ${state.message}")
+                }
+                else -> { /* continue waiting */ }
+            }
+
+            // Timeout protection
+            val elapsed = System.currentTimeMillis() - startTime
+            if (elapsed > timeoutMs) {
+                Log.e(TAG, "ensureReady timeout! charMapSize=${characteristicMap.size}, readyCompleted=${ready.isCompleted}, readyCancelled=${ready.isCancelled}")
+                throw IllegalStateException("ensureReady timed out after ${timeoutMs}ms")
+            }
+
             try {
-                ready.await()
+                withTimeout(1000) {
+                    ready.await()
+                }
             } catch (e: CancellationException) {
-                // disconnected while waiting -> loop and await the next readyField
+                // disconnected while waiting or timeout - check state on next iteration
                 continue
             } catch (t: Throwable) {
-                // also loop on other transient failures
+                // other failures - check state on next iteration
                 continue
             }
         }
