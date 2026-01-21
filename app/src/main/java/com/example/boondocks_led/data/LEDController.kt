@@ -51,12 +51,12 @@ class LEDController @Inject constructor(
             isFourChanTwoOn = false,
             isFourChanThreeOn = false,
             isFourChanFourOn = false,
-            plusOneBrightness = 0,
-            fourChanOneBrightness = 0,
-            fourChanTwoBrightness = 0,
-            fourChanThreeBrightness = 0,
-            fourChanFourBrightness = 0,
-            rgbwBrightness = 0
+            plusOneBrightness = 100,
+            fourChanOneBrightness = 100,
+            fourChanTwoBrightness = 100,
+            fourChanThreeBrightness = 100,
+            fourChanFourBrightness = 100,
+            rgbwBrightness = 100
         )
     )
     val state: StateFlow<LEDControllerState> = _state.asStateFlow()
