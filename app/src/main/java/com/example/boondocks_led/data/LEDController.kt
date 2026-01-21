@@ -66,6 +66,21 @@ class LEDController @Inject constructor(
         ble.trySend(BoonLEDCharacteristic.AllOff, buildAllOffMessage())
     }
 
+    /** Updates local state to reflect all channels as off (without sending BLE command) */
+    fun turnOffState() {
+        Log.i(TAG, "Turning off state in a controller")
+        _state.update {
+            it.copy(
+                isRGBWOn = false,
+                isPlusOneOn = false,
+                isFourChanOneOn = false,
+                isFourChanTwoOn = false,
+                isFourChanThreeOn = false,
+                isFourChanFourOn = false
+            )
+        }
+    }
+
     fun setIndividualControllerType(type: ControllerType) {
 //        if (_state.value.type == type) return
         Log.i(TAG, "In LEDController, attempting to set Controller Type!")

@@ -4,12 +4,12 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import com.example.boondocks_led.ble.BleManager
 import com.example.boondocks_led.ble.BoonLEDCharacteristic
+import com.example.boondocks_led.data.LEDControllerRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import javax.inject.Inject
 
@@ -34,7 +34,8 @@ data class SceneConfigurationState(
 
 @HiltViewModel
 class SceneViewModel @Inject constructor(
-    private val bleManager: BleManager
+    private val bleManager: BleManager,
+    private val ledControllerRepository: LEDControllerRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(SceneSelectionState())
@@ -101,6 +102,10 @@ class SceneViewModel @Inject constructor(
     fun resetConfigurationState() {
         val initialName = getSceneNameForIndex(0)
         _configState.update { SceneConfigurationState(sceneName = initialName) }
+    }
+
+    fun onAllOffClicked() {
+        ledControllerRepository.turnOffAll()
     }
 
     // BLE Communication

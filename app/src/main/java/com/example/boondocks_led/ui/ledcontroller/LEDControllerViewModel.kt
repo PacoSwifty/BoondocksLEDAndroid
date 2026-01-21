@@ -34,7 +34,7 @@ class LEDControllerViewModel @Inject constructor(
     }
 
     fun onAllOffClicked() {
-        controller?.turnOffLights()
+        ledControllerRepository.turnOffAll()
     }
 
     fun onColorSelected(r: Int, g: Int, b: Int) {
