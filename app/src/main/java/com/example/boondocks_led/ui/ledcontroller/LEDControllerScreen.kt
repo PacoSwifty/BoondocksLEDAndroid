@@ -65,7 +65,7 @@ fun LEDScreenContent(
 
     val channels: List<ChannelUi> = when (state.type) {
         ControllerType.RGBW -> listOf(
-            ChannelUi(LEDChannel.RGB, "RGB", state.isRGBWOn, state.rgbwBrightness),
+            ChannelUi(LEDChannel.RGB, "RGBW", state.isRGBWOn, state.rgbwBrightness),
         )
 
         ControllerType.RGBPLUS1 -> listOf(

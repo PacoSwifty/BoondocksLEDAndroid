@@ -114,9 +114,9 @@ class LEDController @Inject constructor(
 
     //region set brightnesses / toggles from viewmodel
     fun setRGBColor(r: Int, g: Int, b: Int, w: Int) {
-        //todo maybe mutually exclusive logic here?
         _state.update { it.copy(r = r, g = g, b = b, w = w) }
-        val msg = buildSetRGBWMessage(r, g, b).encodeToByteArray()
+        Log.i(TAG, "Updating state with RGB color: $r, $g, $b, $w")
+        val msg = buildSetRGBWMessage(r, g, b, w).encodeToByteArray()
 
         setRGBEnabled(true)
         // fire-and-forget but queued + gated internally
@@ -249,9 +249,9 @@ class LEDController @Inject constructor(
      * Documentation for how messages should be built can be found in the JsonMessages.kt file or
      * at https://github.com/tswift123/led_controller/blob/main/Json%20messages.txt
      */
-    fun buildSetRGBWMessage(r: Int, g: Int, b: Int): String {
+    fun buildSetRGBWMessage(r: Int, g: Int, b: Int, w: Int): String {
         if (controllerType == ControllerType.RGBW) {
-            val cmd = mapOf(controllerId to RGBW(r, g, b, 0))
+            val cmd = mapOf(controllerId to RGBW(r, g, b, w))
             return Json.encodeToString(cmd)
         } else {
             val cmd = mapOf(controllerId to RGB(r, g, b))
@@ -290,9 +290,9 @@ class LEDController @Inject constructor(
 
     fun buildToggleRGBMessage(enabled: Boolean): String {
         return if(enabled) {
-            buildSetRGBWMessage(state.value.r, state.value.g, state.value.b,)
+            buildSetRGBWMessage(state.value.r, state.value.g, state.value.b, state.value.w)
         } else {
-            buildSetRGBWMessage(0, 0, 0)
+            buildSetRGBWMessage(0, 0, 0, 0)
         }
     }
 
