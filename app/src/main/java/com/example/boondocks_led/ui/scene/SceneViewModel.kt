@@ -100,8 +100,9 @@ class SceneViewModel @Inject constructor(
     }
 
     fun resetConfigurationState() {
-        val initialName = getSceneNameForIndex(0)
-        _configState.update { SceneConfigurationState(sceneName = initialName) }
+        val selectedIndex = _state.value.selectedIndex ?: 0
+        val initialName = getSceneNameForIndex(selectedIndex)
+        _configState.update { SceneConfigurationState(selectedSceneIndex = selectedIndex, sceneName = initialName) }
     }
 
     fun onAllOffClicked() {
