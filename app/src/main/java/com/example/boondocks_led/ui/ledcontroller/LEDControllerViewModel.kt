@@ -34,12 +34,19 @@ class LEDControllerViewModel @Inject constructor(
     }
 
     fun onAllOffClicked() {
-        controller?.turnOffLights()
+        ledControllerRepository.turnOffAll()
     }
 
     fun onColorSelected(r: Int, g: Int, b: Int) {
         Log.i(TAG, "Selected color R:$r, G:$g, B:$b")
-        controller?.setRGBColor(r, g, b, 0)
+
+        /** ONLY when we're in RGBW, if the color is mostly white use the white LED, otherwise set a combo of RGB */
+        if (controller?.controllerType == ControllerType.RGBW && ((r+g+b)/3 > 240)) {
+            Log.i(TAG,"Mostly White color was selected")
+            controller?.setRGBColor(0, 0, 0, 255)
+        } else {
+            controller?.setRGBColor(r, g, b, 0)
+        }
 
     }
 

@@ -20,6 +20,12 @@ class LEDControllerRepository @Inject constructor(
             controllerFactory.create(controllerId, type=type)
         }
     }
+
+    /** Turns off all controllers - sends BLE command and updates local state */
+    fun turnOffAll() {
+        controllers.values.firstOrNull()?.turnOffLights()
+        controllers.values.forEach { it.turnOffState() }
+    }
 }
 
 

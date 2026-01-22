@@ -21,6 +21,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 
@@ -64,6 +65,21 @@ fun SceneSelectionScreen(
                 modifier = Modifier.size(32.dp),
                 tint = MaterialTheme.colorScheme.onSurface
             )
+        }
+
+        Spacer(modifier = Modifier.weight(1f))
+
+        Button(
+            onClick = { viewModel.onAllOffClicked() },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color(0xFF8B0000),
+                contentColor = Color.White
+            )
+        ) {
+            Text(text = "All Off")
         }
     }
 }

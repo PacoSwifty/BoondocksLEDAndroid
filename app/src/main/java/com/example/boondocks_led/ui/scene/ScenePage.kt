@@ -31,6 +31,9 @@ fun ScenePage(
         ScenePageScreen.Configuration -> {
             SceneConfigurationScreen(
                 viewModel = viewModel,
+                onCancel = {
+                    currentScreen = ScenePageScreen.Selection
+                },
                 onSaveComplete = {
                     currentScreen = ScenePageScreen.Selection
                 }
