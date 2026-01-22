@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -30,6 +31,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 @Composable
 fun SceneConfigurationScreen(
     viewModel: SceneViewModel = hiltViewModel(),
+    onCancel: () -> Unit,
     onSaveComplete: () -> Unit
 ) {
     val configState by viewModel.configState.collectAsState()
@@ -104,6 +106,19 @@ fun SceneConfigurationScreen(
         )
 
         Spacer(modifier = Modifier.height(32.dp))
+
+        // Cancel button
+        OutlinedButton(
+            onClick = onCancel,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+                .height(56.dp)
+        ) {
+            Text("Cancel")
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
 
         // Save button
         Button(
