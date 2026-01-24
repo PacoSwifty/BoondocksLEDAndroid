@@ -6,8 +6,11 @@ import com.example.boondocks_led.ble.BoonLEDCharacteristic
 import com.example.boondocks_led.data.Constants.TAG
 import com.example.boondocks_led.ui.ledcontroller.LEDChannel
 import com.example.boondocks_led.ui.ledcontroller.LEDControllerState
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.serialization.SerialName
@@ -61,6 +64,8 @@ class LEDController @Inject constructor(
     )
     val state: StateFlow<LEDControllerState> = _state.asStateFlow()
 
+    private val _colorPickerResetEvent = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val colorPickerResetEvent: SharedFlow<Unit> = _colorPickerResetEvent.asSharedFlow()
 
     fun turnOffLights() {
         ble.trySend(BoonLEDCharacteristic.AllOff, buildAllOffMessage())
@@ -81,9 +86,9 @@ class LEDController @Inject constructor(
                 g = 0,
                 b = 0,
                 w = 255
-
             )
         }
+        _colorPickerResetEvent.tryEmit(Unit)
     }
 
     fun setIndividualControllerType(type: ControllerType) {
@@ -140,9 +145,13 @@ class LEDController @Inject constructor(
         Log.i(TAG, "Updating state with RGB color: $finalR, $finalG, $finalB, $finalW")
         val msg = buildSetRGBWMessage(finalR, finalG, finalB, finalW).encodeToByteArray()
 
-        setRGBEnabled(true)
+
+        if(!state.value.isRGBWOn) {
+            setRGBEnabled(true)
+        }
         // fire-and-forget but queued + gated internally
         if (state.value.isRGBWOn) {
+            Log.i(TAG, "Setting RGB Location 1")
             ble.trySendForController(controllerId, BoonLEDCharacteristic.LedSet, msg)
         }
     }
@@ -213,6 +222,7 @@ class LEDController @Inject constructor(
 
     fun toggleRGBChannel(enabled: Boolean) {
         val msg = buildToggleRGBMessage(enabled).encodeToByteArray()
+        Log.i(TAG,"Toggling RGB: to $enabled and sending a message")
         ble.trySend(BoonLEDCharacteristic.LedSet, msg)
 
     }
@@ -271,6 +281,7 @@ class LEDController @Inject constructor(
      * at https://github.com/tswift123/led_controller/blob/main/Json%20messages.txt
      */
     fun buildSetRGBWMessage(r: Int, g: Int, b: Int, w: Int): String {
+        Log.i(TAG, "BUILDING RGB MESSAGE")
         if (controllerType == ControllerType.RGBW) {
             val cmd = mapOf(controllerId to RGBW(r, g, b, w))
             return Json.encodeToString(cmd)

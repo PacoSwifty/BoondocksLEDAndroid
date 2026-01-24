@@ -24,6 +24,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.github.skydoves.colorpicker.compose.HsvColorPicker
 import com.github.skydoves.colorpicker.compose.rememberColorPickerController
+import kotlinx.coroutines.flow.Flow
 
 @Composable
 fun RGBPickerCard(
@@ -31,6 +32,7 @@ fun RGBPickerCard(
     title: String = "RGB",
     isOn: Boolean,
     brightness: Float,
+    resetEvent: Flow<Unit>? = null,
     onToggleChanged: (Boolean) -> Unit,
     onBrightnessChanged: (Float) -> Unit,
     onBrightnessChangeFinished: () -> Unit,
@@ -48,12 +50,18 @@ fun RGBPickerCard(
         }
     }
 
-
-    var ignoreInitial by remember { mutableStateOf(true) }
+    var ignoreNextChange by remember { mutableStateOf(true) }
     LaunchedEffect(Unit) {
         // Wait until first frame so initial setup emissions are ignored
         withFrameNanos { }
-        ignoreInitial = false
+        ignoreNextChange = false
+    }
+
+    LaunchedEffect(resetEvent) {
+        resetEvent?.collect {
+            ignoreNextChange = true
+            colorController.selectCenter(fromUser = true)
+        }
     }
 
     Card(
@@ -72,13 +80,15 @@ fun RGBPickerCard(
                     .padding(10.dp),
                 controller = colorController,
                 onColorChanged = { colorEnvelope ->
-                    if (ignoreInitial) return@HsvColorPicker
+                    if (ignoreNextChange) {
+                        ignoreNextChange = false
+                        return@HsvColorPicker
+                    }
                     val color: Color = colorEnvelope.color
                     val red = (color.red * 255).toInt()
                     val green = (color.green * 255).toInt()
                     val blue = (color.blue * 255).toInt()
                     onColorSelected(red, green, blue)
-
                 }
             )
 

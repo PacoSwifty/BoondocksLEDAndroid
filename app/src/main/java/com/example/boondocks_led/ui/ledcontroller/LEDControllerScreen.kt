@@ -25,6 +25,7 @@ import com.example.boondocks_led.data.ControllerType
 import com.example.boondocks_led.ui.components.LightControlCard
 import com.example.boondocks_led.ui.components.RGBPickerCard
 import com.example.boondocks_led.ui.theme.BoondocksTheme
+import kotlinx.coroutines.flow.Flow
 
 @Composable
 fun LEDControllerScreen(
@@ -52,6 +53,7 @@ fun LEDControllerScreen(
             onBrightness = ledViewModel::onBrightnessChanged,
             onBrightnessChangeFinished = ledViewModel::onBrightnessFinished
         ),
+        colorPickerResetEvent = ledViewModel.colorPickerResetEvent,
         onAllOffClicked = ledViewModel::onAllOffClicked
     )
 }
@@ -60,6 +62,7 @@ fun LEDControllerScreen(
 fun LEDScreenContent(
     state: LEDControllerState,
     actions: LedActions,
+    colorPickerResetEvent: Flow<Unit>? = null,
     onAllOffClicked: () -> Unit
 ) {
 
@@ -123,6 +126,7 @@ fun LEDScreenContent(
                 title = rgb.label,
                 isOn = rgb.isOn,
                 brightness = (rgb.brightness/100f), // brightness is only from 0f-1f within the slider, as soon as it leaves that widget we convert to int 0-100
+                resetEvent = colorPickerResetEvent,
                 onToggleChanged = { enabled -> actions.onToggle(LEDChannel.RGB, enabled) },
                 onBrightnessChanged = { v -> actions.onBrightness(LEDChannel.RGB, v) },
                 onBrightnessChangeFinished = { actions.onBrightnessChangeFinished(LEDChannel.RGB) },
