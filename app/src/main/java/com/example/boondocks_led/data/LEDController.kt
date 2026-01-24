@@ -92,9 +92,6 @@ class LEDController @Inject constructor(
     }
 
     fun setIndividualControllerType(type: ControllerType) {
-//        if (_state.value.type == type) return
-        Log.i(TAG, "In LEDController, attempting to set Controller Type!")
-
         val name = "Controller $controllerId"
 
         //todo later we should persist and fetch user-defined channel names. Hardcoding for now.
