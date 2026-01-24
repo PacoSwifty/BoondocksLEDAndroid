@@ -9,6 +9,7 @@ import com.example.boondocks_led.data.LEDController
 import com.example.boondocks_led.data.LEDControllerRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -21,6 +22,7 @@ class LEDControllerViewModel @Inject constructor(
     private var controller: LEDController? = null
     private val _uiState = MutableStateFlow<LEDControllerState?>(null)
     val uiState: StateFlow<LEDControllerState?> = _uiState
+    val colorPickerResetEvent: SharedFlow<Unit>? get() = controller?.colorPickerResetEvent
 
     fun init(controllerId: String, type: ControllerType) {
         if (controller != null) return
