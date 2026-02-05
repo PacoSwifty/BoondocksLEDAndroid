@@ -33,8 +33,8 @@ enum class ControllerType {
 
 class LEDController @Inject constructor(
     val controllerId: String,
-    var controllerType: ControllerType = ControllerType.RGBW,
-    var controllerName: String = "",
+    initialType: ControllerType = ControllerType.RGBW,
+    controllerName: String = "",
     val ble: BleManager
 
 ) {
@@ -43,7 +43,7 @@ class LEDController @Inject constructor(
         LEDControllerState(
             controllerId = controllerId,
             name = controllerName,
-            type = controllerType,
+            type = initialType,
             r = 0,
             g = 0,
             b = 0,
@@ -279,7 +279,7 @@ class LEDController @Inject constructor(
      */
     fun buildSetRGBWMessage(r: Int, g: Int, b: Int, w: Int): String {
         Log.i(TAG, "BUILDING RGB MESSAGE")
-        if (controllerType == ControllerType.RGBW) {
+        if (state.value.type == ControllerType.RGBW) {
             val cmd = mapOf(controllerId to RGBW(r, g, b, w))
             return Json.encodeToString(cmd)
         } else {
@@ -289,7 +289,7 @@ class LEDController @Inject constructor(
     }
 
     fun buildRGBBrightnessMessage(brightness: Int): String {
-        if (controllerType == ControllerType.RGBW) {
+        if (state.value.type == ControllerType.RGBW) {
             val cmd = mapOf(
                 controllerId to RGBW(
                     brightness,
