@@ -43,7 +43,7 @@ class LEDControllerViewModel @Inject constructor(
         Log.i(TAG, "Selected color R:$r, G:$g, B:$b")
 
         /** ONLY when we're in RGBW, if the color is mostly white use the white LED, otherwise set a combo of RGB */
-        if (controller?.controllerType == ControllerType.RGBW && ((r+g+b)/3 > 240)) {
+        if (controller?.state?.value?.type == ControllerType.RGBW && ((r+g+b)/3 > 240)) {
             Log.i(TAG,"Mostly White color was selected")
             controller?.setRGBColor(0, 0, 0, 255)
         } else {

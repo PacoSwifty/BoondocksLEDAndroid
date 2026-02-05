@@ -38,7 +38,7 @@ class LEDControllerFactory @Inject constructor(
         type: ControllerType,
     ): LEDController = LEDController(
         controllerId = controllerId,
-        controllerType = type,
+        initialType = type,
         controllerName = controllerName,
         ble = bleManager
     )
