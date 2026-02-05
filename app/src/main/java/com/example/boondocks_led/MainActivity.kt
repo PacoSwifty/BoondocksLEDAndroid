@@ -26,9 +26,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.core.app.ActivityCompat
 import com.example.boondocks_led.ble.ConnectionState
 import com.example.boondocks_led.data.ControllerType
-import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.boondocks_led.ui.components.TabRow
-import com.example.boondocks_led.ui.ledcontroller.LEDControllerScreen
+import com.example.boondocks_led.ui.ledcontroller.LEDControllerPage
 import com.example.boondocks_led.ui.navigation.tabRowScreens
 import com.example.boondocks_led.ui.scene.ScenePage
 import com.example.boondocks_led.ui.splash.SplashScreen
@@ -123,10 +122,9 @@ class MainActivity : ComponentActivity() {
                     else -> {
                         val controllerIndex = page - 1
                         val (controllerId, controllerType) = controllerConfigs[controllerIndex]
-                        LEDControllerScreen(
+                        LEDControllerPage(
                             controllerId = controllerId,
-                            type = controllerType,
-                            ledViewModel = hiltViewModel(key = "controller_$controllerId")
+                            type = controllerType
                         )
                     }
                 }

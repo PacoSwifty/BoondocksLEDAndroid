@@ -2,12 +2,18 @@ package com.example.boondocks_led.ui.ledcontroller
 
 import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -31,6 +37,7 @@ import kotlinx.coroutines.flow.Flow
 fun LEDControllerScreen(
     controllerId: String,
     type: ControllerType,
+    onSettingsTapped: () -> Unit = {},
     ledViewModel: LEDControllerViewModel = hiltViewModel()
 ) {
 
@@ -54,7 +61,8 @@ fun LEDControllerScreen(
             onBrightnessChangeFinished = ledViewModel::onBrightnessFinished
         ),
         colorPickerResetEvent = ledViewModel.colorPickerResetEvent,
-        onAllOffClicked = ledViewModel::onAllOffClicked
+        onAllOffClicked = ledViewModel::onAllOffClicked,
+        onSettingsTapped = onSettingsTapped
     )
 }
 
@@ -63,7 +71,8 @@ fun LEDScreenContent(
     state: LEDControllerState,
     actions: LedActions,
     colorPickerResetEvent: Flow<Unit>? = null,
-    onAllOffClicked: () -> Unit
+    onAllOffClicked: () -> Unit,
+    onSettingsTapped: () -> Unit = {}
 ) {
 
     val channels: List<ChannelUi> = when (state.type) {
@@ -105,61 +114,75 @@ fun LEDScreenContent(
     }
 
 
-    Column(
-        modifier = Modifier
-            .fillMaxWidth(),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = state.name,
-            modifier = Modifier.padding(vertical = 24.dp),
-            fontSize = 28.sp,
-            textAlign = TextAlign.Center
-        )
-
-        if (state.type == ControllerType.RGBW || state.type == ControllerType.RGBPLUS1) {
-            val rgb = channels.first { it.channel == LEDChannel.RGB }
-
-            RGBPickerCard(
-                modifier = Modifier,
-                title = rgb.label,
-                isOn = rgb.isOn,
-                brightness = (rgb.brightness/100f), // brightness is only from 0f-1f within the slider, as soon as it leaves that widget we convert to int 0-100
-                resetEvent = colorPickerResetEvent,
-                onToggleChanged = { enabled -> actions.onToggle(LEDChannel.RGB, enabled) },
-                onBrightnessChanged = { v -> actions.onBrightness(LEDChannel.RGB, v) },
-                onBrightnessChangeFinished = { actions.onBrightnessChangeFinished(LEDChannel.RGB) },
-                onColorSelected = actions.onColorSelected
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize(),
+            verticalArrangement = Arrangement.Top,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = state.name,
+                modifier = Modifier.padding(vertical = 24.dp),
+                fontSize = 28.sp,
+                textAlign = TextAlign.Center
             )
-        }
 
-        channels
-            .filter { it.channel != LEDChannel.RGB }
-            .forEach { ch ->
-                LightControlCard(
-                    ch.label,
-                    ch.isOn,
-                    onToggleChange = { enabled -> actions.onToggle(ch.channel, enabled) },
-                    sliderValue = (ch.brightness/100f), // brightness is only from 0f-1f within the slider, as soon as it leaves that widget we convert to int 0-100
-                    onSliderChange = { v -> actions.onBrightness(ch.channel, v) },
-                    onSliderChangeFinished = { actions.onBrightnessChangeFinished(ch.channel) },
-                    modifier = Modifier.padding(top = 18.dp)
+            if (state.type == ControllerType.RGBW || state.type == ControllerType.RGBPLUS1) {
+                val rgb = channels.first { it.channel == LEDChannel.RGB }
+
+                RGBPickerCard(
+                    modifier = Modifier,
+                    title = rgb.label,
+                    isOn = rgb.isOn,
+                    brightness = (rgb.brightness/100f), // brightness is only from 0f-1f within the slider, as soon as it leaves that widget we convert to int 0-100
+                    resetEvent = colorPickerResetEvent,
+                    onToggleChanged = { enabled -> actions.onToggle(LEDChannel.RGB, enabled) },
+                    onBrightnessChanged = { v -> actions.onBrightness(LEDChannel.RGB, v) },
+                    onBrightnessChangeFinished = { actions.onBrightnessChangeFinished(LEDChannel.RGB) },
+                    onColorSelected = actions.onColorSelected
                 )
             }
 
-        Spacer(modifier = Modifier.weight(1f))
-        Button(
-            onClick = onAllOffClicked,
+            channels
+                .filter { it.channel != LEDChannel.RGB }
+                .forEach { ch ->
+                    LightControlCard(
+                        ch.label,
+                        ch.isOn,
+                        onToggleChange = { enabled -> actions.onToggle(ch.channel, enabled) },
+                        sliderValue = (ch.brightness/100f), // brightness is only from 0f-1f within the slider, as soon as it leaves that widget we convert to int 0-100
+                        onSliderChange = { v -> actions.onBrightness(ch.channel, v) },
+                        onSliderChangeFinished = { actions.onBrightnessChangeFinished(ch.channel) },
+                        modifier = Modifier.padding(top = 18.dp)
+                    )
+                }
+
+            Spacer(modifier = Modifier.weight(1f))
+            Button(
+                onClick = onAllOffClicked,
+                modifier = Modifier
+                    .fillMaxWidth()           // Fill the width of the screen
+                    .padding(24.dp),          // Apply 24dp padding all around
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF8B0000), // Dark Red background
+                    contentColor = Color.White          // White text color
+                )
+            ) {
+                Text(text = "All Off")
+            }
+        }
+
+        IconButton(
+            onClick = onSettingsTapped,
             modifier = Modifier
-                .fillMaxWidth()           // Fill the width of the screen
-                .padding(24.dp),          // Apply 24dp padding all around
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFF8B0000), // Dark Red background
-                contentColor = Color.White          // White text color
-            )
+                .align(Alignment.TopEnd)
+                .padding(8.dp)
         ) {
-            Text(text = "All Off")
+            Icon(
+                imageVector = Icons.Default.Settings,
+                contentDescription = "Controller Settings"
+            )
         }
     }
 }
