@@ -5,13 +5,17 @@ import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material.ripple.rememberRipple
@@ -22,14 +26,18 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.boondocks_led.ui.navigation.BoondocksDestination
+import com.example.boondocks_led.ui.navigation.tabRowScreens
+import com.example.boondocks_led.ui.theme.BoondocksTheme
 import java.util.Locale
 
 
@@ -56,6 +64,7 @@ fun TabRow(
                 BoondocksTab(
                     text = screen.route,
                     icon = screen.icon,
+                    iconOverlayNumber = screen.iconOverlayNumber,
                     onSelected = { onTabSelected(index) },
                     selected = selectedTabIndex == index
                 )
@@ -68,6 +77,7 @@ fun TabRow(
 private fun BoondocksTab(
     text: String,
     icon: Int,
+    iconOverlayNumber: Int? = null,
     onSelected: () -> Unit,
     selected: Boolean
 ) {
@@ -104,14 +114,37 @@ private fun BoondocksTab(
             )
             .clearAndSetSemantics { contentDescription = text }
     ) {
-        Icon(
-            painter = painterResource(id = icon),
-            contentDescription = text,
-            tint = tabTintColor
-        )
+        Box(contentAlignment = Alignment.Center) {
+            Icon(
+                painter = painterResource(id = icon),
+                contentDescription = text,
+                tint = tabTintColor
+            )
+            if (iconOverlayNumber != null) {
+                Text(
+                    text = iconOverlayNumber.toString(),
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black,
+                    modifier = Modifier.offset(y = -2.dp)
+                )
+            }
+        }
         if (selected) {
             Spacer(Modifier.width(12.dp))
             Text(text.uppercase(Locale.getDefault()), color = tabTintColor)
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun TabRowPreview() {
+    BoondocksTheme {
+        TabRow(
+            allScreens = tabRowScreens,
+            onTabSelected = {},
+            selectedTabIndex = 1
+        )
     }
 }
