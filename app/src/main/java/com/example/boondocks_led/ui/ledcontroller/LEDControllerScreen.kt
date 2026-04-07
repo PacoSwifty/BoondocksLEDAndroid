@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.boondocks_led.data.Constants.TAG
+import com.example.boondocks_led.data.ControllerConfig
 import com.example.boondocks_led.data.ControllerType
 import com.example.boondocks_led.ui.components.LightControlCard
 import com.example.boondocks_led.ui.components.RGBPickerCard
@@ -36,14 +37,14 @@ import kotlinx.coroutines.flow.Flow
 @Composable
 fun LEDControllerScreen(
     controllerId: String,
-    type: ControllerType,
+    config: ControllerConfig,
     onSettingsTapped: () -> Unit = {},
     ledViewModel: LEDControllerViewModel = hiltViewModel()
 ) {
 
     LaunchedEffect(controllerId) {
         Log.i(TAG, "Calling init from the controllerScreen")
-        ledViewModel.init(controllerId, type)
+        ledViewModel.init(controllerId, config)
     }
 
     val state = ledViewModel.uiState.collectAsState().value

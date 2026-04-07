@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.boondocks_led.data.Constants.TAG
+import com.example.boondocks_led.data.ControllerConfig
 import com.example.boondocks_led.data.ControllerType
 import com.example.boondocks_led.data.LEDController
 import com.example.boondocks_led.data.LEDControllerRepository
@@ -24,11 +25,11 @@ class LEDControllerViewModel @Inject constructor(
     val uiState: StateFlow<LEDControllerState?> = _uiState
     val colorPickerResetEvent: SharedFlow<Unit>? get() = controller?.colorPickerResetEvent
 
-    fun init(controllerId: String, type: ControllerType) {
+    fun init(controllerId: String, config: ControllerConfig) {
         if (controller != null) return
         Log.i(TAG, "Calling get from the viewModel")
-        controller = ledControllerRepository.get(controllerId, type)
-        controller?.setIndividualControllerType(type)
+        controller = ledControllerRepository.get(controllerId, config.type, config.name)
+        controller?.setIndividualControllerType(config.type, config.channelNames)
 
         viewModelScope.launch {
             controller!!.state.collect { _uiState.value = it }

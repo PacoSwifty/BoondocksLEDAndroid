@@ -5,12 +5,15 @@ import android.bluetooth.*
 import android.bluetooth.le.*
 import android.content.Context
 import android.util.Log
+import com.example.boondocks_led.data.DeviceConfiguration
+import com.example.boondocks_led.data.getDefaultConfiguration
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.serialization.json.Json
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
@@ -57,6 +60,14 @@ class BleManagerImpl @Inject constructor(
         extraBufferCapacity = 64
     )
     override val incoming: SharedFlow<ByteArray> = _incoming.asSharedFlow()
+
+    private val _deviceConfig = MutableStateFlow<DeviceConfiguration?>(null)
+    override val deviceConfig: StateFlow<DeviceConfiguration?> = _deviceConfig.asStateFlow()
+
+    private val configChunks = StringBuilder()
+    private val readConfigUuid = UUID.fromString(CHARACTERISTIC_READ_CONFIG)
+    private val cccDescriptorUuid = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
+    private val configJson = Json { ignoreUnknownKeys = true }
 
     @Volatile
     private var inflightRequest: WriteRequest? = null
@@ -198,6 +209,68 @@ class BleManagerImpl @Inject constructor(
         return true
     }
 
+    // ---------- Config reading ----------
+    @SuppressLint("MissingPermission")
+    private suspend fun readDeviceConfiguration() {
+        val g = gatt ?: run {
+            Log.w(TAG, "readDeviceConfiguration: no GATT connection")
+            return
+        }
+        val service = g.getService(BOON_SERVICE_UUID) ?: run {
+            Log.w(TAG, "readDeviceConfiguration: service not found")
+            return
+        }
+        val configChar = service.getCharacteristic(readConfigUuid) ?: run {
+            Log.w(TAG, "readDeviceConfiguration: ReadConfig characteristic not found")
+            return
+        }
+
+        // Enable notifications
+        g.setCharacteristicNotification(configChar, true)
+        val cccDescriptor = configChar.getDescriptor(cccDescriptorUuid)
+        if (cccDescriptor != null) {
+            g.writeDescriptor(cccDescriptor, BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE)
+            delay(100) // brief pause for descriptor write to complete
+        } else {
+            Log.w(TAG, "readDeviceConfiguration: CCC descriptor not found")
+        }
+
+        // Clear accumulator and trigger the read
+        configChunks.clear()
+        g.readCharacteristic(configChar)
+
+        // Wait for _deviceConfig to be populated by notification handler
+        val result = withTimeoutOrNull(5_000) {
+            _deviceConfig.first { it != null }
+        }
+
+        if (result == null) {
+            throw IllegalStateException("Config read timed out")
+        }
+        Log.i(TAG, "Device configuration read successfully")
+    }
+
+    private fun processConfigChunk(bytes: ByteArray) {
+        val chunk = bytes.decodeToString()
+        Log.d(TAG, "Config chunk received (${chunk.length} chars)")
+
+        if (chunk.endsWith("\n")) {
+            configChunks.append(chunk.trimEnd('\n'))
+            val fullJson = configChunks.toString()
+            Log.i(TAG, "Full config JSON received: $fullJson")
+            try {
+                val config = configJson.decodeFromString<DeviceConfiguration>(fullJson)
+                _deviceConfig.value = config
+                Log.i(TAG, "Parsed device configuration successfully")
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to parse device configuration: ${e.message}", e)
+                configChunks.clear()
+            }
+        } else {
+            configChunks.append(chunk)
+        }
+    }
+
     // ---------- Core loops ----------
     @SuppressLint("MissingPermission")
 
@@ -232,6 +305,27 @@ class BleManagerImpl @Inject constructor(
                 Log.i(TAG, "connectLoop: Setting state to Connected for ${device.name} / ${device.address}")
                 _connectionState.value = ConnectionState.Connected(device.name, device.address)
                 Log.i(TAG, "connectLoop: State is now Connected")
+
+                // Read device configuration after connection
+                scope.launch {
+                    var configRetries = 0
+                    val maxRetries = 3
+                    while (configRetries < maxRetries && _deviceConfig.value == null) {
+                        try {
+                            readDeviceConfiguration()
+                        } catch (e: Exception) {
+                            configRetries++
+                            Log.w(TAG, "Config read attempt $configRetries/$maxRetries failed: ${e.message}")
+                            if (configRetries < maxRetries) {
+                                delay(500)
+                            }
+                        }
+                    }
+                    if (_deviceConfig.value == null) {
+                        Log.w(TAG, "Config read failed after $maxRetries attempts, using defaults")
+                        _deviceConfig.value = getDefaultConfiguration()
+                    }
+                }
 
                 // Stay here until disconnected
                 while (!stopRequested.get() && isReady()) {
@@ -377,6 +471,8 @@ class BleManagerImpl @Inject constructor(
 
             characteristicMap = emptyMap()
             configuredControllers.value = emptySet()
+            _deviceConfig.value = null
+            configChunks.clear()
             connectedDevice = null
             if (!ready.isCompleted) {
                 // cancel waiting senders
@@ -492,7 +588,11 @@ class BleManagerImpl @Inject constructor(
             characteristic: BluetoothGattCharacteristic
         ) {
             val bytes = characteristic.value ?: return
-            _incoming.tryEmit(bytes)
+            if (characteristic.uuid == readConfigUuid) {
+                processConfigChunk(bytes)
+            } else {
+                _incoming.tryEmit(bytes)
+            }
         }
 
         override fun onCharacteristicRead(

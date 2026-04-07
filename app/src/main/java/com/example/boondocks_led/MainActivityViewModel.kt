@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.boondocks_led.ble.BleManager
 import com.example.boondocks_led.ble.ConnectionState
+import com.example.boondocks_led.data.DeviceConfiguration
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -15,6 +16,7 @@ class MainActivityViewModel @Inject constructor(
 ) : ViewModel() {
 
     val connectionState: StateFlow<ConnectionState> = bleManager.connectionState
+    val deviceConfig: StateFlow<DeviceConfiguration?> = bleManager.deviceConfig
 
     fun startBle() {
         viewModelScope.launch { bleManager.start() }
