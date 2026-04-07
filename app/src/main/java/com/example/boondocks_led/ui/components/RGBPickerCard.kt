@@ -12,12 +12,6 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.SideEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -39,28 +33,16 @@ fun RGBPickerCard(
     onColorSelected: (Int, Int, Int) -> Unit
 ) {
     val colorController = rememberColorPickerController()
-    var configured by remember(colorController) { mutableStateOf(false) }
 
-    SideEffect {
-        if (!configured) {
-            colorController.setWheelRadius(14.dp)
-            colorController.setWheelAlpha(1f)
-            colorController.setDebounceDuration(200L)
-            configured = true
-        }
-    }
-
-    var ignoreNextChange by remember { mutableStateOf(true) }
-    LaunchedEffect(Unit) {
-        // Wait until first frame so initial setup emissions are ignored
-        withFrameNanos { }
-        ignoreNextChange = false
+    LaunchedEffect(colorController) {
+        colorController.wheelRadius = 14.dp
+        colorController.wheelAlpha = 1f
+        colorController.debounceDuration = 200L
     }
 
     LaunchedEffect(resetEvent) {
         resetEvent?.collect {
-            ignoreNextChange = true
-            colorController.selectCenter(fromUser = true)
+            colorController.selectCenter(fromUser = false)
         }
     }
 
@@ -80,10 +62,7 @@ fun RGBPickerCard(
                     .padding(10.dp),
                 controller = colorController,
                 onColorChanged = { colorEnvelope ->
-                    if (ignoreNextChange) {
-                        ignoreNextChange = false
-                        return@HsvColorPicker
-                    }
+                    if (!colorEnvelope.fromUser) return@HsvColorPicker
                     val color: Color = colorEnvelope.color
                     val red = (color.red * 255).toInt()
                     val green = (color.green * 255).toInt()
