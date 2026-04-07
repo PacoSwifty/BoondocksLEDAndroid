@@ -7,7 +7,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.example.boondocks_led.data.ControllerType
+import com.example.boondocks_led.data.ControllerConfig
 
 enum class LEDControllerPageScreen {
     Controller,
@@ -17,7 +17,7 @@ enum class LEDControllerPageScreen {
 @Composable
 fun LEDControllerPage(
     controllerId: String,
-    type: ControllerType
+    config: ControllerConfig
 ) {
     var currentScreen by remember { mutableStateOf(LEDControllerPageScreen.Controller) }
     val configViewModel: LEDControllerConfigViewModel = hiltViewModel(key = "config_$controllerId")
@@ -27,7 +27,7 @@ fun LEDControllerPage(
         LEDControllerPageScreen.Controller -> {
             LEDControllerScreen(
                 controllerId = controllerId,
-                type = type,
+                config = config,
                 onSettingsTapped = {
                     Log.i("LEDControllerPage", "Settings tapped for controller $controllerId")
                     configViewModel.initWithController(controllerId)

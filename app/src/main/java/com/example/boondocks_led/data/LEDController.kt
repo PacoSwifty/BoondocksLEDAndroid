@@ -91,25 +91,27 @@ class LEDController @Inject constructor(
         _colorPickerResetEvent.tryEmit(Unit)
     }
 
-    fun setIndividualControllerType(type: ControllerType) {
-        val name = "Controller $controllerId"
+    fun setIndividualControllerType(type: ControllerType, configChannelNames: ChannelNames? = null) {
+        val name = _state.value.name.ifEmpty { "Controller $controllerId" }
 
-        //todo later we should persist and fetch user-defined channel names. Hardcoding for now.
-        var channelNames = mutableMapOf<String, String>()
+        val channelNames = mutableMapOf<String, String>()
 
         when (type) {
-            ControllerType.RGBW -> channelNames["RGBW"] = "User Channel 1"
+            ControllerType.RGBW -> channelNames["RGBW"] = configChannelNames?.let {
+                "${it.r} ${it.g} ${it.b} ${it.w}".trim()
+            }?.ifEmpty { "User Channel 1" } ?: "User Channel 1"
             ControllerType.RGBPLUS1 -> {
-                channelNames["RGB"] = "User Channel 1"
-                channelNames["W"] = "User Channel 2"
-
+                channelNames["RGB"] = configChannelNames?.let {
+                    "${it.r} ${it.g} ${it.b}".trim()
+                }?.ifEmpty { "User Channel 1" } ?: "User Channel 1"
+                channelNames["W"] = configChannelNames?.w?.ifEmpty { "User Channel 2" } ?: "User Channel 2"
             }
 
             ControllerType.FOURCHANNEL -> {
-                channelNames["R"] = "User Channel 1"
-                channelNames["G"] = "User Channel 2"
-                channelNames["B"] = "User Channel 3"
-                channelNames["W"] = "User Channel 4"
+                channelNames["R"] = configChannelNames?.r?.ifEmpty { "User Channel 1" } ?: "User Channel 1"
+                channelNames["G"] = configChannelNames?.g?.ifEmpty { "User Channel 2" } ?: "User Channel 2"
+                channelNames["B"] = configChannelNames?.b?.ifEmpty { "User Channel 3" } ?: "User Channel 3"
+                channelNames["W"] = configChannelNames?.w?.ifEmpty { "User Channel 4" } ?: "User Channel 4"
             }
         }
         _state.update { it.copy(type = type) }

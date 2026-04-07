@@ -25,7 +25,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.core.app.ActivityCompat
 import com.example.boondocks_led.ble.ConnectionState
-import com.example.boondocks_led.data.ControllerType
+import com.example.boondocks_led.data.DeviceConfiguration
+import com.example.boondocks_led.data.getDefaultConfiguration
 import com.example.boondocks_led.ui.components.TabRow
 import com.example.boondocks_led.ui.ledcontroller.LEDControllerPage
 import com.example.boondocks_led.ui.navigation.tabRowScreens
@@ -69,19 +70,28 @@ class MainActivity : ComponentActivity() {
     @Composable
     fun BoondocksApp() {
         val connectionState by mainActivityViewModel.connectionState.collectAsState()
+        val deviceConfig by mainActivityViewModel.deviceConfig.collectAsState()
 
         BoondocksTheme {
             when (connectionState) {
-                is ConnectionState.Connected -> MainContent()
+                is ConnectionState.Connected -> {
+                    val config = deviceConfig
+                    if (config != null) {
+                        MainContent(config)
+                    } else {
+                        SplashScreen()
+                    }
+                }
                 else -> SplashScreen()
             }
         }
     }
 
     @Composable
-    fun MainContent() {
+    fun MainContent(deviceConfig: DeviceConfiguration) {
         val pagerState = rememberPagerState(pageCount = { tabRowScreens.size })
         val coroutineScope = rememberCoroutineScope()
+        val defaultConfig = getDefaultConfiguration()
 
         Scaffold(
             topBar = {
@@ -103,12 +113,7 @@ class MainActivity : ComponentActivity() {
                 }
             }
         ) { innerPadding ->
-            val controllerConfigs = listOf(
-                "1" to ControllerType.RGBW,
-                "2" to ControllerType.RGBPLUS1,
-                "3" to ControllerType.FOURCHANNEL,
-                "4" to ControllerType.RGBW
-            )
+            val controllerIds = listOf("1", "2", "3", "4")
 
             HorizontalPager(
                 state = pagerState,
@@ -120,11 +125,12 @@ class MainActivity : ComponentActivity() {
                 when (page) {
                     0 -> ScenePage()
                     else -> {
-                        val controllerIndex = page - 1
-                        val (controllerId, controllerType) = controllerConfigs[controllerIndex]
+                        val controllerId = controllerIds[page - 1]
+                        val config = deviceConfig.getController(controllerId)
+                            ?: defaultConfig.getController(controllerId)!!
                         LEDControllerPage(
                             controllerId = controllerId,
-                            type = controllerType
+                            config = config
                         )
                     }
                 }

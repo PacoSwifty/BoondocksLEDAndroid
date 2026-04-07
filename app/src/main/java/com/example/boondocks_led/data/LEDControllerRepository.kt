@@ -14,10 +14,10 @@ class LEDControllerRepository @Inject constructor(
 
     private val controllers = mutableMapOf<String, LEDController>()
 
-    fun get(controllerId: String, type: ControllerType): LEDController {
+    fun get(controllerId: String, type: ControllerType, name: String = "Controller $controllerId"): LEDController {
         return controllers.getOrPut(controllerId) {
             Log.i(TAG, "Calling create from repository")
-            controllerFactory.create(controllerId, type=type)
+            controllerFactory.create(controllerId, controllerName = name, type = type)
         }
     }
 

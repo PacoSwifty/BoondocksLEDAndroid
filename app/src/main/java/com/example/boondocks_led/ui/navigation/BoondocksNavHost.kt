@@ -6,14 +6,18 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import com.example.boondocks_led.data.ControllerType
+import com.example.boondocks_led.data.DeviceConfiguration
+import com.example.boondocks_led.data.getDefaultConfiguration
 import com.example.boondocks_led.ui.ledcontroller.LEDControllerPage
 
 @Composable
 fun BoondocksNavHost(
     navController: NavHostController,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    deviceConfig: DeviceConfiguration? = null
 ) {
+    val config = deviceConfig ?: getDefaultConfiguration()
+
     NavHost(
         navController = navController,
         startDestination = Controller1.route,
@@ -21,19 +25,19 @@ fun BoondocksNavHost(
     ) {
 
         composable(route = Controller1.route) {
-            LEDControllerPage(controllerId = "1", type = ControllerType.RGBW)
+            LEDControllerPage(controllerId = "1", config = config.getController("1")!!)
         }
 
         composable(route = Controller2.route) {
-            LEDControllerPage(controllerId = "2", type = ControllerType.RGBPLUS1)
+            LEDControllerPage(controllerId = "2", config = config.getController("2")!!)
         }
 
         composable(route = Controller3.route) {
-            LEDControllerPage(controllerId = "3", type = ControllerType.FOURCHANNEL)
+            LEDControllerPage(controllerId = "3", config = config.getController("3")!!)
         }
 
         composable(route = Controller4.route) {
-            LEDControllerPage(controllerId = "4", type = ControllerType.RGBW)
+            LEDControllerPage(controllerId = "4", config = config.getController("4")!!)
         }
 
     }

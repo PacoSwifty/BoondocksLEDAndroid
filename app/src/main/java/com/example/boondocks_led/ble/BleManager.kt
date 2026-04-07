@@ -1,5 +1,6 @@
 package com.example.boondocks_led.ble
 
+import com.example.boondocks_led.data.DeviceConfiguration
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 
@@ -17,6 +18,9 @@ interface BleManager {
 
     /** Raw incoming bytes from notifications/reads (optional until you enable notifications). */
     val incoming: SharedFlow<ByteArray>
+
+    /** Device configuration read from the peripheral after connection. */
+    val deviceConfig: StateFlow<DeviceConfiguration?>
 
     /** Start “connect & keep connected” loop (auto-reconnect). Safe to call multiple times. */
     suspend fun start()
