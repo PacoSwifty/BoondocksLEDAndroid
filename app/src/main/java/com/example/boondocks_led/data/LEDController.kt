@@ -67,6 +67,14 @@ class LEDController @Inject constructor(
     private val _colorPickerResetEvent = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     val colorPickerResetEvent: SharedFlow<Unit> = _colorPickerResetEvent.asSharedFlow()
 
+    fun setName(name: String) {
+        _state.update { it.copy(name = name) }
+    }
+
+    fun setChannelNames(channelNames: ChannelNames) {
+        _state.update { it.copy(channelNames = channelNames) }
+    }
+
     fun turnOffLights() {
         ble.trySend(BoonLEDCharacteristic.AllOff, buildAllOffMessage())
     }
@@ -99,26 +107,32 @@ class LEDController @Inject constructor(
         when (type) {
             ControllerType.RGBW -> channelNames["RGBW"] = configChannelNames?.let {
                 "${it.r} ${it.g} ${it.b} ${it.w}".trim()
-            }?.ifEmpty { "User Channel 1" } ?: "User Channel 1"
+            }?.ifEmpty { "RGBW" } ?: "RGBW"
             ControllerType.RGBPLUS1 -> {
                 channelNames["RGB"] = configChannelNames?.let {
                     "${it.r} ${it.g} ${it.b}".trim()
-                }?.ifEmpty { "User Channel 1" } ?: "User Channel 1"
-                channelNames["W"] = configChannelNames?.w?.ifEmpty { "User Channel 2" } ?: "User Channel 2"
+                }?.ifEmpty { "RGB" } ?: "RGB"
+                channelNames["W"] = configChannelNames?.w?.ifEmpty { "+1" } ?: "+1"
             }
 
+            //update these defaults accordingly
             ControllerType.FOURCHANNEL -> {
-                channelNames["R"] = configChannelNames?.r?.ifEmpty { "User Channel 1" } ?: "User Channel 1"
-                channelNames["G"] = configChannelNames?.g?.ifEmpty { "User Channel 2" } ?: "User Channel 2"
-                channelNames["B"] = configChannelNames?.b?.ifEmpty { "User Channel 3" } ?: "User Channel 3"
-                channelNames["W"] = configChannelNames?.w?.ifEmpty { "User Channel 4" } ?: "User Channel 4"
+                channelNames["R"] = configChannelNames?.r?.ifEmpty { "Channel 1" } ?: "Channel 1"
+                channelNames["G"] = configChannelNames?.g?.ifEmpty { "Channel 2" } ?: "Channel 2"
+                channelNames["B"] = configChannelNames?.b?.ifEmpty { "Channel 3" } ?: "Channel 3"
+                channelNames["W"] = configChannelNames?.w?.ifEmpty { "Channel 4" } ?: "Channel 4"
             }
         }
-        _state.update { it.copy(type = type) }
+        _state.update {
+            it.copy(
+                type = type,
+                channelNames = configChannelNames ?: it.channelNames
+            )
+        }
 
         val json = buildSetTypeMessage(type, controllerId, name, channelNames)
         Log.i(TAG, "Setting individual controller type: \n $json")
-        ble.tryConfigureController(controllerId, json.encodeToByteArray())
+        ble.trySend(BoonLEDCharacteristic.CtrlTypeSet, json)
     }
 
     //region set brightnesses / toggles from viewmodel
@@ -151,7 +165,7 @@ class LEDController @Inject constructor(
         // fire-and-forget but queued + gated internally
         if (state.value.isRGBWOn) {
             Log.i(TAG, "Setting RGB Location 1")
-            ble.trySendForController(controllerId, BoonLEDCharacteristic.LedSet, msg)
+            ble.trySend(BoonLEDCharacteristic.LedSet, msg)
         }
     }
 

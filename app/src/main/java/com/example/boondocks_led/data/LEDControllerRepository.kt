@@ -2,14 +2,17 @@ package com.example.boondocks_led.data
 
 import android.util.Log
 import com.example.boondocks_led.ble.BleManager
+import com.example.boondocks_led.ble.BoonLEDCharacteristic
 import com.example.boondocks_led.data.Constants.TAG
+import kotlinx.serialization.json.Json
 import javax.inject.Inject
 import javax.inject.Singleton
 
 
 @Singleton
 class LEDControllerRepository @Inject constructor(
-    private val controllerFactory: LEDControllerFactory
+    private val controllerFactory: LEDControllerFactory,
+    private val bleManager: BleManager
 ) {
 
     private val controllers = mutableMapOf<String, LEDController>()
@@ -23,7 +26,8 @@ class LEDControllerRepository @Inject constructor(
 
     /** Turns off all controllers - sends BLE command and updates local state */
     fun turnOffAll() {
-        controllers.values.firstOrNull()?.turnOffLights()
+        val msg = Json.encodeToString(mapOf(1 to "off"))
+        bleManager.trySend(BoonLEDCharacteristic.AllOff, msg)
         controllers.values.forEach { it.turnOffState() }
     }
 }

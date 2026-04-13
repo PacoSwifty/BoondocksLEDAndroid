@@ -40,10 +40,4 @@ interface BleManager {
     /** Convenience: just pass in a string */
     fun trySend(characteristic: BoonLEDCharacteristic, message: String) = trySend(characteristic, message.toByteArray(Charsets.UTF_8))
 
-    suspend fun configureController(controllerId: String, payload: ByteArray)
-    suspend fun sendForController(controllerId: String, characteristic: BoonLEDCharacteristic, bytes: ByteArray)
-    /** Convenience method for fire-and-forget*/
-    fun trySendForController(controllerId: String, characteristic: BoonLEDCharacteristic, bytes: ByteArray): Boolean
-    fun tryConfigureController(controllerId: String, payload: ByteArray): Boolean
-
 }

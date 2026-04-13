@@ -123,7 +123,7 @@ class MainActivity : ComponentActivity() {
                 userScrollEnabled = false
             ) { page ->
                 when (page) {
-                    0 -> ScenePage()
+                    0 -> ScenePage(sceneNames = deviceConfig.scenes)
                     else -> {
                         val controllerId = controllerIds[page - 1]
                         val config = deviceConfig.getController(controllerId)

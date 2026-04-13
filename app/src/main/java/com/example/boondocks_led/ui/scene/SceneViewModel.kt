@@ -44,8 +44,30 @@ class SceneViewModel @Inject constructor(
     private val _configState = MutableStateFlow(SceneConfigurationState())
     val configState: StateFlow<SceneConfigurationState> = _configState.asStateFlow()
 
+    fun applySceneNames(scenes: Map<String, String>) {
+        _state.update { currentState ->
+            val newButtons = currentState.buttons.toMutableList()
+            for ((key, name) in scenes) {
+                val index = (key.toIntOrNull() ?: continue) - 1
+                if (index in newButtons.indices) {
+                    newButtons[index] = newButtons[index].copy(text = name)
+                }
+            }
+            currentState.copy(buttons = newButtons)
+        }
+    }
+
     fun onButtonTapped(index: Int) {
         Log.i(TAG, "Button $index tapped")
+        val wasAlreadySelected = _state.value.buttons.getOrNull(index)?.isSelected == true
+
+        if (wasAlreadySelected) {
+            // Tapping an already-selected scene acts as "all off"
+            deselectAllScenes()
+            ledControllerRepository.turnOffAll()
+            return
+        }
+
         _state.update { currentState ->
             val newButtons = currentState.buttons.mapIndexed { i, button ->
                 button.copy(isSelected = i == index)
@@ -106,7 +128,15 @@ class SceneViewModel @Inject constructor(
     }
 
     fun onAllOffClicked() {
+        deselectAllScenes()
         ledControllerRepository.turnOffAll()
+    }
+
+    private fun deselectAllScenes() {
+        _state.update { currentState ->
+            val newButtons = currentState.buttons.map { it.copy(isSelected = false) }
+            currentState.copy(buttons = newButtons, selectedIndex = null)
+        }
     }
 
     // BLE Communication

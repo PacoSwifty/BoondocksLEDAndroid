@@ -29,7 +29,7 @@ class LEDControllerViewModel @Inject constructor(
         if (controller != null) return
         Log.i(TAG, "Calling get from the viewModel")
         controller = ledControllerRepository.get(controllerId, config.type, config.name)
-        controller?.setIndividualControllerType(config.type, config.channelNames)
+        controller!!.setChannelNames(config.channelNames)
 
         viewModelScope.launch {
             controller!!.state.collect { _uiState.value = it }

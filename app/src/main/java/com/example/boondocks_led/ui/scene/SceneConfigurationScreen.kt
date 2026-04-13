@@ -24,8 +24,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.boondocks_led.ui.theme.BoondocksTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -35,6 +37,28 @@ fun SceneConfigurationScreen(
     onSaveComplete: () -> Unit
 ) {
     val configState by viewModel.configState.collectAsState()
+
+    SceneConfigurationContent(
+        configState = configState,
+        onSceneDropdownSelected = viewModel::onSceneDropdownSelected,
+        onSceneNameChanged = viewModel::onSceneNameChanged,
+        onSave = {
+            viewModel.onSaveSceneTapped()
+            onSaveComplete()
+        },
+        onCancel = onCancel
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SceneConfigurationContent(
+    configState: SceneConfigurationState,
+    onSceneDropdownSelected: (Int) -> Unit,
+    onSceneNameChanged: (String) -> Unit,
+    onSave: () -> Unit,
+    onCancel: () -> Unit
+) {
     var dropdownExpanded by remember { mutableStateOf(false) }
 
     Column(
@@ -83,7 +107,7 @@ fun SceneConfigurationScreen(
                     DropdownMenuItem(
                         text = { Text(option) },
                         onClick = {
-                            viewModel.onSceneDropdownSelected(index)
+                            onSceneDropdownSelected(index)
                             dropdownExpanded = false
                         }
                     )
@@ -96,7 +120,7 @@ fun SceneConfigurationScreen(
         // Text input for custom scene name
         OutlinedTextField(
             value = configState.sceneName,
-            onValueChange = { viewModel.onSceneNameChanged(it) },
+            onValueChange = onSceneNameChanged,
             label = { Text("Scene Name") },
             placeholder = { Text("Enter name (max 10 chars)") },
             singleLine = true,
@@ -122,10 +146,7 @@ fun SceneConfigurationScreen(
 
         // Save button
         Button(
-            onClick = {
-                viewModel.onSaveSceneTapped()
-                onSaveComplete()
-            },
+            onClick = onSave,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp)
@@ -133,5 +154,23 @@ fun SceneConfigurationScreen(
         ) {
             Text("Save Scene")
         }
+    }
+}
+
+@Preview(showSystemUi = true, showBackground = true)
+@Composable
+fun SceneConfigurationScreenPreview() {
+    BoondocksTheme {
+        SceneConfigurationContent(
+            configState = SceneConfigurationState(
+                selectedSceneIndex = 0,
+                sceneName = "Evening",
+                sceneOptions = listOf("Scene 1", "Scene 2", "Scene 3", "Scene 4")
+            ),
+            onSceneDropdownSelected = {},
+            onSceneNameChanged = {},
+            onSave = {},
+            onCancel = {}
+        )
     }
 }

@@ -30,7 +30,7 @@ fun LEDControllerPage(
                 config = config,
                 onSettingsTapped = {
                     Log.i("LEDControllerPage", "Settings tapped for controller $controllerId")
-                    configViewModel.initWithController(controllerId)
+                    configViewModel.initWithController(controllerId, config)
                     currentScreen = LEDControllerPageScreen.Configuration
                 },
                 ledViewModel = ledViewModel

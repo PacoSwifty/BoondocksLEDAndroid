@@ -76,38 +76,39 @@ fun LEDScreenContent(
     onSettingsTapped: () -> Unit = {}
 ) {
 
+    val cn = state.channelNames
     val channels: List<ChannelUi> = when (state.type) {
         ControllerType.RGBW -> listOf(
-            ChannelUi(LEDChannel.RGB, "RGBW", state.isRGBWOn, state.rgbwBrightness),
+            ChannelUi(LEDChannel.RGB, cn.r.ifEmpty { "RGBW" }, state.isRGBWOn, state.rgbwBrightness),
         )
 
         ControllerType.RGBPLUS1 -> listOf(
-            ChannelUi(LEDChannel.RGB, "RGB", state.isRGBWOn, state.rgbwBrightness),
-            ChannelUi(LEDChannel.PLUS_ONE, "+1", state.isPlusOneOn, state.plusOneBrightness),
+            ChannelUi(LEDChannel.RGB, cn.r.ifEmpty { "RGB" }, state.isRGBWOn, state.rgbwBrightness),
+            ChannelUi(LEDChannel.PLUS_ONE, cn.w.ifEmpty { "+1" }, state.isPlusOneOn, state.plusOneBrightness),
         )
 
         ControllerType.FOURCHANNEL -> listOf(
             ChannelUi(
                 LEDChannel.CH1,
-                "Channel 1",
+                cn.r.ifEmpty { "Channel 1" },
                 state.isFourChanOneOn,
                 state.fourChanOneBrightness
             ),
             ChannelUi(
                 LEDChannel.CH2,
-                "Channel 2",
+                cn.g.ifEmpty { "Channel 2" },
                 state.isFourChanTwoOn,
                 state.fourChanTwoBrightness
             ),
             ChannelUi(
                 LEDChannel.CH3,
-                "Channel 3",
+                cn.b.ifEmpty { "Channel 3" },
                 state.isFourChanThreeOn,
                 state.fourChanThreeBrightness
             ),
             ChannelUi(
                 LEDChannel.CH4,
-                "Channel 4",
+                cn.w.ifEmpty { "Channel 4" },
                 state.isFourChanFourOn,
                 state.fourChanFourBrightness
             ),
