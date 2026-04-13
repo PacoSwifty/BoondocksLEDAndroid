@@ -1,6 +1,7 @@
 package com.example.boondocks_led.ui.scene
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -14,8 +15,12 @@ enum class ScenePageScreen {
 
 @Composable
 fun ScenePage(
+    sceneNames: Map<String, String>? = null,
     viewModel: SceneViewModel = hiltViewModel()
 ) {
+    LaunchedEffect(sceneNames) {
+        sceneNames?.let { viewModel.applySceneNames(it) }
+    }
     var currentScreen by remember { mutableStateOf(ScenePageScreen.Selection) }
 
     when (currentScreen) {

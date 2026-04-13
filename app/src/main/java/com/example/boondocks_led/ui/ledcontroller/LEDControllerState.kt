@@ -1,5 +1,6 @@
 package com.example.boondocks_led.ui.ledcontroller
 
+import com.example.boondocks_led.data.ChannelNames
 import com.example.boondocks_led.data.ControllerType
 
 data class LEDControllerState(
@@ -21,7 +22,8 @@ data class LEDControllerState(
     val fourChanOneBrightness: Int,
     val fourChanTwoBrightness: Int,
     val fourChanThreeBrightness: Int,
-    val fourChanFourBrightness: Int
+    val fourChanFourBrightness: Int,
+    val channelNames: ChannelNames = ChannelNames()
 
 
     //Considerations

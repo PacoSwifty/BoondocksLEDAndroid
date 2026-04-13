@@ -13,9 +13,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.example.boondocks_led.ui.theme.BoondocksTheme
 import com.github.skydoves.colorpicker.compose.HsvColorPicker
 import com.github.skydoves.colorpicker.compose.rememberColorPickerController
 import kotlinx.coroutines.flow.Flow
@@ -35,7 +37,7 @@ fun RGBPickerCard(
     val colorController = rememberColorPickerController()
 
     LaunchedEffect(colorController) {
-        colorController.wheelRadius = 14.dp
+        colorController.wheelRadius = 8.dp
         colorController.wheelAlpha = 1f
         colorController.debounceDuration = 200L
     }
@@ -98,5 +100,21 @@ fun RGBPickerCard(
 
             }
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun RGBPickerCardPreview() {
+    BoondocksTheme {
+        RGBPickerCard(
+            title = "RGBW",
+            isOn = true,
+            brightness = 0.75f,
+            onToggleChanged = {},
+            onBrightnessChanged = {},
+            onBrightnessChangeFinished = {},
+            onColorSelected = { _, _, _ -> }
+        )
     }
 }

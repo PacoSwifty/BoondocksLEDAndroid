@@ -22,8 +22,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.boondocks_led.ui.theme.BoondocksTheme
 
 @Composable
 fun SceneSelectionScreen(
@@ -32,6 +34,21 @@ fun SceneSelectionScreen(
 ) {
     val state by viewModel.state.collectAsState()
 
+    SceneSelectionContent(
+        state = state,
+        onButtonTapped = viewModel::onButtonTapped,
+        onSettingsTapped = onSettingsTapped,
+        onAllOffClicked = viewModel::onAllOffClicked
+    )
+}
+
+@Composable
+fun SceneSelectionContent(
+    state: SceneSelectionState,
+    onButtonTapped: (Int) -> Unit,
+    onSettingsTapped: () -> Unit,
+    onAllOffClicked: () -> Unit
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -45,7 +62,7 @@ fun SceneSelectionScreen(
             SceneButton(
                 text = buttonState.text,
                 isSelected = buttonState.isSelected,
-                onClick = { viewModel.onButtonTapped(index) },
+                onClick = { onButtonTapped(index) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 8.dp)
@@ -70,7 +87,7 @@ fun SceneSelectionScreen(
         Spacer(modifier = Modifier.weight(1f))
 
         Button(
-            onClick = { viewModel.onAllOffClicked() },
+            onClick = onAllOffClicked,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(24.dp),
@@ -81,6 +98,27 @@ fun SceneSelectionScreen(
         ) {
             Text(text = "All Off")
         }
+    }
+}
+
+@Preview(showSystemUi = true, showBackground = true)
+@Composable
+fun SceneSelectionScreenPreview() {
+    BoondocksTheme {
+        SceneSelectionContent(
+            state = SceneSelectionState(
+                buttons = listOf(
+                    SceneButtonState("Evening", isSelected = true),
+                    SceneButtonState("Movie", isSelected = false),
+                    SceneButtonState("Party", isSelected = false),
+                    SceneButtonState("Relax", isSelected = false)
+                ),
+                selectedIndex = 0
+            ),
+            onButtonTapped = {},
+            onSettingsTapped = {},
+            onAllOffClicked = {}
+        )
     }
 }
 

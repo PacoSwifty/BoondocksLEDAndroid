@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -24,8 +26,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.boondocks_led.data.ControllerType
+import com.example.boondocks_led.ui.theme.BoondocksTheme
 
 private fun ControllerType.displayName(): String = when (this) {
     ControllerType.RGBW -> "RGBW"
@@ -41,13 +45,40 @@ fun LEDControllerConfigurationScreen(
     onSaveComplete: () -> Unit
 ) {
     val configState by viewModel.configState.collectAsState()
+
+    LEDControllerConfigurationContent(
+        configState = configState,
+        onControllerSelected = viewModel::onControllerSelected,
+        onTypeSelected = viewModel::onTypeSelected,
+        onControllerNameChanged = viewModel::onControllerNameChanged,
+        onChannelNameChanged = viewModel::onChannelNameChanged,
+        onSave = {
+            viewModel.onSave()
+            onSaveComplete()
+        },
+        onCancel = onCancel
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun LEDControllerConfigurationContent(
+    configState: LEDControllerConfigState,
+    onControllerSelected: (Int) -> Unit,
+    onTypeSelected: (ControllerType) -> Unit,
+    onControllerNameChanged: (String) -> Unit,
+    onChannelNameChanged: (Int, String) -> Unit,
+    onSave: () -> Unit,
+    onCancel: () -> Unit
+) {
     var controllerDropdownExpanded by remember { mutableStateOf(false) }
     var typeDropdownExpanded by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp),
+            .padding(16.dp)
+            .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top
     ) {
@@ -90,7 +121,7 @@ fun LEDControllerConfigurationScreen(
                     DropdownMenuItem(
                         text = { Text(option) },
                         onClick = {
-                            viewModel.onControllerSelected(index)
+                            onControllerSelected(index)
                             controllerDropdownExpanded = false
                         }
                     )
@@ -130,7 +161,7 @@ fun LEDControllerConfigurationScreen(
                     DropdownMenuItem(
                         text = { Text(type.displayName()) },
                         onClick = {
-                            viewModel.onTypeSelected(type)
+                            onTypeSelected(type)
                             typeDropdownExpanded = false
                         }
                     )
@@ -138,7 +169,76 @@ fun LEDControllerConfigurationScreen(
             }
         }
 
-        Spacer(modifier = Modifier.weight(1f))
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Controller Name field
+        OutlinedTextField(
+            value = configState.controllerName,
+            onValueChange = onControllerNameChanged,
+            label = { Text("Controller Name") },
+            singleLine = true,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+        )
+
+        // Channel name fields based on selected type
+        when (configState.selectedType) {
+            ControllerType.RGBW -> {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "RGBW channel name will match the controller name",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
+            }
+            ControllerType.RGBPLUS1 -> {
+                Spacer(modifier = Modifier.height(16.dp))
+                OutlinedTextField(
+                    value = configState.channelName1,
+                    onValueChange = { onChannelNameChanged(1, it) },
+                    label = { Text("RGB Channel Name") },
+                    singleLine = true,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                OutlinedTextField(
+                    value = configState.channelName2,
+                    onValueChange = { onChannelNameChanged(2, it) },
+                    label = { Text("+1 Channel Name") },
+                    singleLine = true,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                )
+            }
+            ControllerType.FOURCHANNEL -> {
+                Spacer(modifier = Modifier.height(16.dp))
+                for (i in 1..4) {
+                    val value = when (i) {
+                        1 -> configState.channelName1
+                        2 -> configState.channelName2
+                        3 -> configState.channelName3
+                        else -> configState.channelName4
+                    }
+                    OutlinedTextField(
+                        value = value,
+                        onValueChange = { onChannelNameChanged(i, it) },
+                        label = { Text("Channel $i Name") },
+                        singleLine = true,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp)
+                    )
+                    if (i < 4) Spacer(modifier = Modifier.height(12.dp))
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
 
         // Cancel button
         OutlinedButton(
@@ -155,10 +255,7 @@ fun LEDControllerConfigurationScreen(
 
         // Save button
         Button(
-            onClick = {
-                viewModel.onSave()
-                onSaveComplete()
-            },
+            onClick = onSave,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp)
@@ -166,5 +263,25 @@ fun LEDControllerConfigurationScreen(
         ) {
             Text("Save")
         }
+    }
+}
+
+@Preview(showSystemUi = true, showBackground = true)
+@Composable
+fun LEDControllerConfigurationScreenPreview() {
+    BoondocksTheme {
+        LEDControllerConfigurationContent(
+            configState = LEDControllerConfigState(
+                selectedControllerIndex = 0,
+                selectedType = ControllerType.RGBW,
+                controllerName = "Living Room"
+            ),
+            onControllerSelected = {},
+            onTypeSelected = {},
+            onControllerNameChanged = {},
+            onChannelNameChanged = { _, _ -> },
+            onSave = {},
+            onCancel = {}
+        )
     }
 }
