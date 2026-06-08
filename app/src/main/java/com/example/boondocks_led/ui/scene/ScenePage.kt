@@ -7,6 +7,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.boondocks_led.data.SceneConfig
 
 enum class ScenePageScreen {
     Selection,
@@ -15,7 +16,7 @@ enum class ScenePageScreen {
 
 @Composable
 fun ScenePage(
-    sceneNames: Map<String, String>? = null,
+    sceneNames: Map<String, SceneConfig>? = null,
     viewModel: SceneViewModel = hiltViewModel()
 ) {
     LaunchedEffect(sceneNames) {

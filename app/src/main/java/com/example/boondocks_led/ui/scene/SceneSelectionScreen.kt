@@ -62,6 +62,7 @@ fun SceneSelectionContent(
             SceneButton(
                 text = buttonState.text,
                 isSelected = buttonState.isSelected,
+                isEnabled = buttonState.isEnabled,
                 onClick = { onButtonTapped(index) },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -126,11 +127,13 @@ fun SceneSelectionScreenPreview() {
 private fun SceneButton(
     text: String,
     isSelected: Boolean,
+    isEnabled: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Button(
         onClick = onClick,
+        enabled = isEnabled,
         modifier = modifier.height(56.dp),
         colors = ButtonDefaults.buttonColors(
             containerColor = if (isSelected) {

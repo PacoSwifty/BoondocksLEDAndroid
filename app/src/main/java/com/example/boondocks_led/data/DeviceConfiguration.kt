@@ -19,12 +19,19 @@ data class ControllerConfig(
 )
 
 @Serializable
+data class SceneConfig(
+    @SerialName("Name") val name: String,
+    @SerialName("RGBWValues") val rgbwValues: Map<String, Int>,
+    @SerialName("Brightness") val brightness: Map<String, Int>
+)
+
+@Serializable
 data class DeviceConfiguration(
     @SerialName("1") val controller1: ControllerConfig? = null,
     @SerialName("2") val controller2: ControllerConfig? = null,
     @SerialName("3") val controller3: ControllerConfig? = null,
     @SerialName("4") val controller4: ControllerConfig? = null,
-    @SerialName("Scenes") val scenes: Map<String, String>? = null
+    @SerialName("Scenes") val scenes: Map<String, SceneConfig>? = null
 ) {
     fun getController(id: String): ControllerConfig? = when (id) {
         "1" -> controller1
@@ -56,5 +63,10 @@ fun getDefaultConfiguration(): DeviceConfiguration = DeviceConfiguration(
         type = ControllerType.RGBW,
         channelNames = ChannelNames(r = "Red", g = "Green", b = "Blue", w = "White")
     ),
-    scenes = mapOf("1" to "Scene 1", "2" to "Scene 2", "3" to "Scene 3", "4" to "Scene 4")
+    scenes = mapOf(
+        "1" to SceneConfig(name = "Scene 1", rgbwValues = emptyMap(), brightness = emptyMap()),
+        "2" to SceneConfig(name = "Scene 2", rgbwValues = emptyMap(), brightness = emptyMap()),
+        "3" to SceneConfig(name = "Scene 3", rgbwValues = emptyMap(), brightness = emptyMap()),
+        "4" to SceneConfig(name = "Scene 4", rgbwValues = emptyMap(), brightness = emptyMap())
+    )
 )

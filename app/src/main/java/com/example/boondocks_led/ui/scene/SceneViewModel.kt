@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import com.example.boondocks_led.ble.BleManager
 import com.example.boondocks_led.ble.BoonLEDCharacteristic
 import com.example.boondocks_led.data.LEDControllerRepository
+import com.example.boondocks_led.data.SceneConfig
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,7 +19,8 @@ private const val MAX_SCENE_NAME_LENGTH = 10
 
 data class SceneButtonState(
     val text: String = "Scene",
-    val isSelected: Boolean = false
+    val isSelected: Boolean = false,
+    val isEnabled: Boolean = false
 )
 
 data class SceneSelectionState(
@@ -44,13 +46,13 @@ class SceneViewModel @Inject constructor(
     private val _configState = MutableStateFlow(SceneConfigurationState())
     val configState: StateFlow<SceneConfigurationState> = _configState.asStateFlow()
 
-    fun applySceneNames(scenes: Map<String, String>) {
+    fun applySceneNames(scenes: Map<String, SceneConfig>) {
         _state.update { currentState ->
             val newButtons = currentState.buttons.toMutableList()
-            for ((key, name) in scenes) {
+            for ((key, scene) in scenes) {
                 val index = (key.toIntOrNull() ?: continue) - 1
                 if (index in newButtons.indices) {
-                    newButtons[index] = newButtons[index].copy(text = name)
+                    newButtons[index] = newButtons[index].copy(text = scene.name, isEnabled = true)
                 }
             }
             currentState.copy(buttons = newButtons)
@@ -59,6 +61,7 @@ class SceneViewModel @Inject constructor(
 
     fun onButtonTapped(index: Int) {
         Log.i(TAG, "Button $index tapped")
+        if (_state.value.buttons.getOrNull(index)?.isEnabled != true) return
         val wasAlreadySelected = _state.value.buttons.getOrNull(index)?.isSelected == true
 
         if (wasAlreadySelected) {
@@ -112,13 +115,19 @@ class SceneViewModel @Inject constructor(
 
     fun onSaveSceneTapped() {
         val config = _configState.value
-        Log.i(TAG, "Save scene tapped - Index: ${config.selectedSceneIndex}, Name: ${config.sceneName}")
+        val index = config.selectedSceneIndex
+        val displayName = config.sceneName.ifEmpty { "Scene ${index + 1}" }
+        Log.i(TAG, "Save scene tapped - Index: $index, Name: ${config.sceneName}")
 
-        // Update the button text in the selection screen
-        setButtonText(config.selectedSceneIndex, config.sceneName.ifEmpty { "Scene ${config.selectedSceneIndex + 1}" })
+        _state.update { currentState ->
+            val newButtons = currentState.buttons.toMutableList()
+            if (index in newButtons.indices) {
+                newButtons[index] = newButtons[index].copy(text = displayName, isEnabled = true)
+            }
+            currentState.copy(buttons = newButtons)
+        }
 
-        // Send save scene message via BLE
-        sendSceneSaveMessage(config.selectedSceneIndex, config.sceneName)
+        sendSceneSaveMessage(index, config.sceneName)
     }
 
     fun resetConfigurationState() {
@@ -164,6 +173,8 @@ class SceneViewModel @Inject constructor(
     private fun buildSceneSaveMessage(sceneIndex: Int, sceneName: String): String {
         val sceneNumber = (sceneIndex + 1).toString() // 1-indexed, as string
         val cmd = mapOf(sceneNumber to sceneName)
-        return Json.encodeToString(cmd)
+        val jsonString = Json.encodeToString(cmd)
+        Log.i(TAG, "Scene save message: $jsonString")
+        return jsonString
     }
 }
